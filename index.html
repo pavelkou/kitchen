@@ -117,7 +117,7 @@ window.__ok = true;
 
 const $ = id => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-let dogTick = null;
+const ANIMS = [];   // per-frame animation callbacks (dog, grill master)
 const DX = -1.85; // tall units moved left: oven column starts 60 cm right of the sink
 const isMobile = matchMedia('(pointer:coarse)').matches;
 const nextFrame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
@@ -799,7 +799,7 @@ async function build() {
     // on the middle stool (x = −2.76), seat top 0.67 m, facing the island
     dog.position.set(-2.76, 0.672, 2.97);
     let tPrev = 0;
-    dogTick = t => {
+    ANIMS.push(t => {
       const s = t / 1000;
       head.rotation.y = 0.65 * Math.sin(s * 0.55) + 0.18 * Math.sin(s * 1.9);
       head.rotation.x = -0.12 + 0.1 * Math.sin(s * 0.8) + 0.04 * Math.sin(s * 2.7);
@@ -808,7 +808,103 @@ async function build() {
       muzzle.position.z = -0.085 - burst * 0.004 * (0.5 + 0.5 * Math.sin(s * 28));
       nose.scale.x = 0.016 * (1 + burst * 0.12 * Math.sin(s * 28));
       torso.scale.y = 0.15 * (1 + 0.012 * Math.sin(s * 3.2));               // breathing
-    };
+    });
+  })();
+
+  /* ----- balcony: outdoor table with a Ninja Woodfire OG701 grill (46 W × 46 D × 34 H cm), the grill master, two chairs ----- */
+  (function balconyScene() {
+    const BX0 = pX(77.36), BX1 = pX(212.72), BZ1 = pZ(155.64);     // balcony inner extents (x from the façade rail, z to the far rail)
+    const add = (geo, mat, x, y, z, parent = scene, keep = false) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = m.receiveShadow = true; if (keep) m.userData.keep = true; parent.add(m); return m; };
+    const teak = new THREE.MeshStandardMaterial({ map: makeWood('#9a7148', 61), roughness: 0.7 });
+    const blk = new THREE.MeshStandardMaterial({ color: 0x1a1a1b, roughness: 0.5, metalness: 0.4 });
+    const grillBody = new THREE.MeshStandardMaterial({ color: 0x232425, roughness: 0.45, metalness: 0.2 });
+    const grillLid = new THREE.MeshStandardMaterial({ color: 0x6d7073, roughness: 0.35, metalness: 0.5 });
+    const cushion = new THREE.MeshStandardMaterial({ color: 0xc9c5bd, roughness: 0.95 });
+    const RB = (w, h, d, r) => new RoundedBoxGeometry(w, h, d, 3, r);
+    // table 120 × 60 against the far glass rail
+    const TX = (BX0 + BX1) / 2 + 0.1, TZ = BZ1 - 0.36, TH = 0.75;
+    add(new THREE.BoxGeometry(1.2, 0.035, 0.6), teak, TX, TH - 0.0175, TZ);
+    for (const [dx, dz] of [[-0.55, -0.25], [0.55, -0.25], [-0.55, 0.25], [0.55, 0.25]]) add(new THREE.BoxGeometry(0.035, TH - 0.035, 0.035), blk, TX + dx, (TH - 0.035) / 2, TZ + dz);
+    // grill: front (controls) toward the kitchen (−z), lid hinged at the back and open
+    const gy = TH, gz = TZ + 0.02;
+    add(RB(0.46, 0.2, 0.46, 0.03), grillBody, TX, gy + 0.1, gz);
+    add(new THREE.BoxGeometry(0.2, 0.05, 0.01), new THREE.MeshStandardMaterial({ color: 0x0c0c0c, roughness: 0.2 }), TX, gy + 0.1, gz - 0.231);
+    add(new THREE.BoxGeometry(0.06, 0.02, 0.004), new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0x4fd0ff, emissiveIntensity: 0.6 }), TX, gy + 0.105, gz - 0.237);
+    add(RB(0.09, 0.07, 0.12, 0.01), grillBody, TX - 0.2, gy + 0.235, gz + 0.12);            // woodfire pellet box
+    const grate = (() => { const [c, g] = canvas(128, 128); g.fillStyle = '#121212'; g.fillRect(0, 0, 128, 128); g.fillStyle = '#3a3a3a'; for (let i = 0; i < 128; i += 8) g.fillRect(i, 0, 3, 128); return new THREE.MeshStandardMaterial({ map: toTex(c), roughness: 0.6, metalness: 0.6 }); })();
+    add(new THREE.BoxGeometry(0.38, 0.004, 0.28), grate, TX, gy + 0.2, gz);
+    const lid = new THREE.Group(); lid.position.set(TX, gy + 0.2, gz + 0.23); lid.rotation.x = 1.75; scene.add(lid);
+    add(RB(0.46, 0.14, 0.46, 0.04), grillLid, 0, 0.07, -0.23, lid);
+    add(new THREE.BoxGeometry(0.24, 0.025, 0.03), blk, 0, 0.11, -0.47, lid);                  // lid handle
+    const patty = new THREE.MeshStandardMaterial({ color: 0x4a2a1a, roughness: 0.75 });
+    const P = [[-0.12, -0.07], [0, -0.07], [0.12, -0.07], [-0.12, 0.07], [0, 0.07], [0.12, 0.07]];
+    const patties = P.map(([dx, dz]) => add(new THREE.CylinderGeometry(0.05, 0.05, 0.018, 24), patty, TX + dx, gy + 0.211, gz + dz, scene, true));
+    // two outdoor chairs on the right side of the balcony (seen from the kitchen), facing the middle
+    for (const cz of [BZ1 - 2.55, BZ1 - 1.75]) {
+      const g = new THREE.Group(); g.position.set(BX0 + 0.42, 0, cz); g.rotation.y = Math.PI / 2; scene.add(g);
+      add(RB(0.56, 0.08, 0.56, 0.02), blk, 0, 0.38, 0, g);
+      add(RB(0.52, 0.08, 0.5, 0.035), cushion, 0, 0.45, 0.02, g);
+      const bk = add(RB(0.56, 0.5, 0.06, 0.02), blk, 0, 0.66, -0.27, g); bk.rotation.x = -0.18;
+      const bc = add(RB(0.5, 0.42, 0.07, 0.03), cushion, 0, 0.68, -0.22, g); bc.rotation.x = -0.18;
+      for (const s of [-1, 1]) { add(new THREE.BoxGeometry(0.04, 0.04, 0.56), blk, s * 0.28, 0.6, 0, g);
+        for (const fz of [-0.25, 0.25]) add(new THREE.BoxGeometry(0.035, 0.6, 0.035), blk, s * 0.28, 0.3, fz, g); }
+    }
+    // the grill master: 180 cm, red boxers only, back to the kitchen, flipping burgers
+    const skin = new THREE.MeshStandardMaterial({ color: 0xd6a888, roughness: 0.75 });
+    const red = new THREE.MeshStandardMaterial({ color: 0xb3121d, roughness: 0.85 });
+    const white = new THREE.MeshStandardMaterial({ color: 0xf2f2f0, roughness: 0.8 });
+    const navy = new THREE.MeshStandardMaterial({ color: 0x1b2340, roughness: 0.8 });
+    const hair = new THREE.MeshStandardMaterial({ color: 0x2a1f18, roughness: 0.9 });
+    const crack = new THREE.MeshStandardMaterial({ color: 0x6b4433, roughness: 0.9 });
+    const man = new THREE.Group(); man.position.set(TX + 0.05, 0.006, TZ - 0.62); scene.add(man);      // faces +z (the grill)
+    const S = new THREE.SphereGeometry(1, 28, 20);
+    const part = (geo, mat, x, y, z, sx = 1, sy = 1, sz = 1, parent = man) => { const m = add(geo, mat, x, y, z, parent, true); m.scale.set(sx, sy, sz); return m; };
+    const limb = (r0, r1, h, mat, x, y, z, parent = man) => part(new THREE.CylinderGeometry(r0, r1, h, 18), mat, x, y, z, 1, 1, 1, parent);
+    for (const s of [-1, 1]) {
+      part(new RoundedBoxGeometry(0.1, 0.06, 0.26, 2, 0.025), skin, s * 0.1, 0.03, 0.05);                    // feet
+      limb(0.052, 0.038, 0.44, skin, s * 0.1, 0.28, 0);                                                        // calves
+      part(S, skin, s * 0.1, 0.5, 0, 0.058, 0.06, 0.06);                                                       // knees
+      limb(0.085, 0.058, 0.36, skin, s * 0.1, 0.68, 0);                                                        // thighs
+      limb(0.098, 0.094, 0.15, red, s * 0.1, 0.83, 0);                                                         // boxer legs
+      part(S, red, s * 0.085, 0.93, -0.03, 0.105, 0.11, 0.11);                                                 // seat of the boxers
+    }
+    part(S, red, 0, 0.94, 0.01, 0.19, 0.11, 0.13);                                                            // hips
+    const band = part(new THREE.CylinderGeometry(1, 1, 1, 40), white, 0, 1.0, 0.005, 0.178, 0.032, 0.132); band.rotation.x = -0.13; // waistband, low at the back
+    const stripe = part(new THREE.CylinderGeometry(1, 1, 1, 40), navy, 0, 0.985, 0.005, 0.179, 0.006, 0.133); stripe.rotation.x = -0.13;
+    part(S, skin, 0, 1.11, 0.025, 0.155, 0.14, 0.135);                                                        // belly
+    part(S, skin, 0, 1.25, 0, 0.17, 0.26, 0.12);                                                              // torso
+    part(S, skin, 0, 1.38, 0.0, 0.205, 0.13, 0.12);                                                           // chest / shoulders mass
+    part(new THREE.BoxGeometry(0.008, 0.055, 0.012), crack, 0, 1.0, -0.123);                                 // the famous crack above the waistband
+    for (const s of [-1, 1]) part(S, skin, s * 0.03, 1.0, -0.11, 0.035, 0.03, 0.02);                          // cheek tops peeking out
+    limb(0.055, 0.06, 0.1, skin, 0, 1.55, 0);                                                                 // neck
+    part(S, skin, 0, 1.68, 0.01, 0.105, 0.12, 0.11);                                                          // head
+    part(S, hair, 0, 1.69, -0.03, 0.108, 0.115, 0.1);
+    for (const s of [-1, 1]) part(S, skin, s * 0.105, 1.67, 0.0, 0.015, 0.03, 0.02);                          // ears
+    // left arm resting toward the table
+    for (const s of [1]) { part(S, skin, s * 0.2, 1.46, 0, 0.065, 0.065, 0.065);   // his left arm (+x)
+      const ua = limb(0.048, 0.04, 0.3, skin, s * 0.22, 1.3, 0.02); ua.rotation.x = -0.15;
+      const fa = limb(0.038, 0.032, 0.27, skin, s * 0.23, 1.08, 0.12); fa.rotation.x = -0.9; }
+    // right arm: shoulder pivot → upper arm → elbow pivot → forearm → spatula
+    part(S, skin, -0.2, 1.46, 0, 0.065, 0.065, 0.065);
+    const sh = new THREE.Group(); sh.position.set(-0.21, 1.46, 0); man.add(sh);   // his right arm (−x, he faces +z)
+    limb(0.048, 0.04, 0.3, skin, 0, -0.15, 0, sh);
+    const el = new THREE.Group(); el.position.set(0, -0.3, 0); sh.add(el);
+    limb(0.038, 0.032, 0.27, skin, 0, -0.135, 0, el);
+    const hand = new THREE.Group(); hand.position.set(0, -0.28, 0); el.add(hand);
+    part(S, skin, 0, 0, 0, 0.035, 0.045, 0.03, hand);
+    limb(0.008, 0.008, 0.18, blk, 0, -0.1, 0.02, hand).rotation.x = 0.2;                                     // spatula handle
+    part(new THREE.BoxGeometry(0.08, 0.004, 0.1), new THREE.MeshStandardMaterial({ color: 0xbfbfbf, metalness: 1, roughness: 0.3 }), 0, -0.2, 0.06, 1, 1, 1, hand);
+    // animation: every 3.2 s scoop → lift → flip one patty
+    const flipP = patties[1], base = flipP.position.clone();
+    ANIMS.push(t => {
+      const c = (t / 3200) % 1, k = Math.sin(c * Math.PI);
+      sh.rotation.x = -0.75 - 0.35 * k; sh.rotation.z = 0.2;
+      el.rotation.x = -0.9 + 0.5 * k;
+      hand.rotation.x = 0.9 - 0.4 * k;
+      const f = Math.max(0, Math.min(1, (c - 0.35) / 0.4));                       // patty in the air for 40% of the cycle
+      flipP.position.set(base.x, base.y + Math.sin(f * Math.PI) * 0.16, base.z);
+      flipP.rotation.x = f * Math.PI;
+    });
   })();
 
   /* ----- lights ----- */
@@ -1075,7 +1171,7 @@ function tick() {
     if (auto) tgt.yaw += 0.0015;
     for (const k of ['x', 'y', 'z', 'yaw', 'pitch', 'fov']) cur[k] += (tgt[k] - cur[k]) * 0.2;
     tourTick(performance.now());
-    if (dogTick) dogTick(performance.now());
+    ANIMS.forEach(f => f(performance.now()));
     if (vrWalk && performance.now() - vrT0 > 250) { vfwd.set(0, 0, -1).applyQuaternion(camera.quaternion); vfwd.y = 0; if (vfwd.lengthSq() > 1e-4) { vfwd.normalize(); cur.x += vfwd.x * 0.025; cur.z += vfwd.z * 0.025; tgt.x = cur.x; tgt.z = cur.z; } }
     renderVR(); return;
   }
@@ -1086,7 +1182,7 @@ function tick() {
     if (Math.abs(d) > 1e-5) { cur[k] += d * 0.2; moving = true; } else cur[k] = tgt[k];
   }
   if (moving) { const f = $('fov'); if (Math.abs(f.value - cur.fov) > 0.5) f.value = Math.round(cur.fov); }
-  if (dogTick) dogTick(performance.now());              // the dog is always animating, so every frame is drawn
+  ANIMS.forEach(f => f(performance.now()));            // dog + grill master animate, so every frame is drawn
   apply(); draw(); if (moving || dirty) drawMap(); dirty = false;
 }
 
