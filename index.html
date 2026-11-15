@@ -529,12 +529,13 @@ async function build() {
   grid(1.2, 2.0, 0.103, 0.42, TZ - 0.019, TZ, 1, 1);
   oven(1.2, 2.0, 0.425, 1.03, TZ);
   oven(1.2, 2.0, 1.035, 1.56, TZ);
-  grid(1.2, 2.0, 1.565, 1.948, TZ - 0.019, TZ, 1, 1);
-  grid(1.2, 2.0, 1.953, 2.65, TZ - 0.019, TZ, 1, 1);
+  // tall-unit fronts are inset 1.5 mm at each side so every cabinet meets its neighbour with the same 3 mm shadow gap
+  grid(1.2015, 1.9985, 1.565, 1.948, TZ - 0.019, TZ, 1, 1);
+  grid(1.2015, 1.9985, 1.953, 2.65, TZ - 0.019, TZ, 1, 1);
   // fridge niche
   // niche 92.3 cm so the run ends exactly at the end of the 567 cm wall
   B(2.0, 1.86, 0, 2.923, 1.95, 0.56, M.dark);
-  B(2.0, 1.95, 0, 2.923, 2.65, TZ - 0.02, carcassFront); grid(2.0, 2.923, 1.953, 2.65, TZ - 0.019, TZ, 2, 1);
+  B(2.0, 1.95, 0, 2.923, 2.65, TZ - 0.02, carcassFront); grid(2.0015, 2.9215, 1.953, 2.65, TZ - 0.019, TZ, 2, 1);
   B(2.017, 0.05, 0.02, 2.907, 1.85, 0.7, M.fridge);
   B(2.08, 0.0, 0.6, 2.87, 0.05, 0.68, M.dark);
   B(2.462, 0.06, 0.7, 2.468, 1.84, 0.702, M.dark);
@@ -547,7 +548,7 @@ async function build() {
   // pantry, 60 cm
   B(2.923, 0, 0, 3.523, 0.1, TZ - 0.06, M.dark);
   B(2.923, 0.1, 0, 3.523, 2.65, TZ - 0.02, carcassFront);
-  grid(2.923, 3.523, 0.103, 1.948, TZ - 0.019, TZ, 1, 1); grid(2.923, 3.523, 1.953, 2.65, TZ - 0.019, TZ, 1, 1);
+  grid(2.9245, 3.5215, 0.103, 1.948, TZ - 0.019, TZ, 1, 1); grid(2.9245, 3.5215, 1.953, 2.65, TZ - 0.019, TZ, 1, 1);
   for (const o of scene.children.slice(n0)) o.position.x += DX;
 
   /* ----- island: ceramic top + waterfall sides ----- */
