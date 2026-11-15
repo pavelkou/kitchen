@@ -888,6 +888,62 @@ async function build() {
       }
       add(new THREE.BoxGeometry(0.1, 0.07, 1.2), blackMetal, TVW - 0.28, 0.575, cz);                 // soundbar
       plant(TVW - 0.25, 0.54, cz - 1.2, 1.0); }
+    // white open shoe cabinet (3 × 8 cubbies + drawer) on the TV wall between the entrance door swing and the console,
+    // every cubby holds one pair of shoes
+    { const W = 0.9, D = 0.35, Hc = 2.0, wood = new THREE.MeshStandardMaterial({ color: 0xf3f3f1, roughness: 0.55 });
+      const cab = new THREE.Group(); cab.position.set(TVW - D / 2 - 0.005, 0, 1.45); cab.rotation.y = -Math.PI / 2; scene.add(cab);   // local +z = front (faces the room)
+      const box = (w, h, d, x, y, z, m = wood) => add(new THREE.BoxGeometry(w, h, d), m, x, y, z, 0, cab);
+      box(0.02, Hc, D, -W / 2 + 0.01, Hc / 2, 0); box(0.02, Hc, D, W / 2 - 0.01, Hc / 2, 0);              // sides
+      box(W - 0.04, Hc - 0.06, 0.008, 0, Hc / 2 + 0.03, -D / 2 + 0.004);                                  // back
+      box(W + 0.03, 0.03, D + 0.02, 0, Hc + 0.015, 0.01); box(W + 0.05, 0.015, D + 0.03, 0, Hc + 0.037, 0.015);   // top + cornice
+      box(W - 0.04, 0.06, D - 0.03, 0, 0.03, -0.015);                                                      // plinth
+      const y0 = 0.33, nR = 8, rh = (Hc - 0.035 - y0) / nR, cw = (W - 0.04 - 2 * 0.016) / 3;
+      for (let r = 0; r <= nR; r++) box(W - 0.04, 0.016, D - 0.01, 0, y0 + r * rh, 0);                    // shelves
+      for (const s of [-1, 1]) box(0.016, Hc - 0.035 - y0, D - 0.01, s * (cw / 2 + 0.008), y0 + (Hc - 0.035 - y0) / 2, 0);   // dividers
+      // drawer with a raised panel and a brass bar handle
+      box(W - 0.05, 0.25, 0.02, 0, 0.06 + 0.125, D / 2 - 0.01);
+      add(RB(W - 0.15, 0.17, 0.012, 0.006), wood, 0, 0.185, D / 2 + 0.004, 0, cab);
+      add(new THREE.CylinderGeometry(0.006, 0.006, 0.2, 12), new THREE.MeshStandardMaterial({ color: 0xc9a75a, metalness: 1, roughness: 0.25 }), 0, 0.2, D / 2 + 0.03, 0, cab).rotation.z = Math.PI / 2;
+      // ---- shoes (toe toward +z) ----
+      const mc = {}; const mat = (c, r = 0.6) => mc[c + r] || (mc[c + r] = new THREE.MeshStandardMaterial({ color: c, roughness: r }));
+      const S = new THREE.SphereGeometry(1, 20, 14);
+      const part = (g, geo, m, x, y, z, sx = 1, sy = 1, sz = 1) => { const p = new THREE.Mesh(geo, m); p.position.set(x, y, z); p.scale.set(sx, sy, sz); p.castShadow = p.receiveShadow = true; g.add(p); return p; };
+      const RBs = (w, h, d, r) => new RoundedBoxGeometry(w, h, d, 3, r);
+      const SHOE = {
+        sneaker: (g, c, c2) => { part(g, RBs(0.095, 0.03, 0.27, 0.012), mat(0xf2f2f0), 0, 0.015, 0);
+          part(g, S, mat(c), 0, 0.055, -0.01, 0.046, 0.04, 0.125); part(g, S, mat(c), 0, 0.075, -0.075, 0.042, 0.04, 0.06);
+          part(g, RBs(0.097, 0.018, 0.12, 0.008), mat(c2), 0, 0.045, -0.02); part(g, S, mat(0x222222), 0, 0.105, -0.085, 0.028, 0.006, 0.04); },
+        boot: (g, c) => { part(g, RBs(0.095, 0.03, 0.27, 0.01), mat(0x3b2a1e, 0.8), 0, 0.015, 0);
+          part(g, S, mat(c, 0.75), 0, 0.055, 0.02, 0.046, 0.04, 0.11); part(g, RBs(0.085, 0.15, 0.12, 0.03), mat(c, 0.75), 0, 0.105, -0.06);
+          part(g, S, mat(0x2a2a2a), 0, 0.18, -0.06, 0.03, 0.005, 0.045); },
+        heel: (g, c, strappy) => { part(g, RBs(0.07, 0.008, 0.11, 0.003), mat(0x2b2420), 0, 0.004, 0.08);
+          const arch = part(g, RBs(0.06, 0.008, 0.15, 0.003), mat(0x2b2420), 0, 0.045, -0.035); arch.rotation.x = -0.55;
+          part(g, new THREE.CylinderGeometry(0.006, 0.004, 0.085, 10), mat(0x2b2420), 0, 0.045, -0.1);
+          if (strappy) { for (const z of [0.07, 0.03]) part(g, RBs(0.075, 0.01, 0.012, 0.004), mat(c), 0, 0.03 + (0.08 - z) * 0.2, z); part(g, RBs(0.07, 0.03, 0.01, 0.004), mat(c), 0, 0.1, -0.1); }
+          else { part(g, S, mat(c, 0.35), 0, 0.02, 0.085, 0.036, 0.025, 0.055); const ctr = part(g, RBs(0.068, 0.045, 0.06, 0.02), mat(c, 0.35), 0, 0.1, -0.085); ctr.rotation.x = -0.5; } },
+        clog: (g, c) => { part(g, RBs(0.1, 0.03, 0.26, 0.012), mat(c, 0.5), 0, 0.015, 0); part(g, S, mat(c, 0.5), 0, 0.045, 0.03, 0.05, 0.045, 0.1);
+          part(g, new THREE.TorusGeometry(0.045, 0.006, 8, 20, Math.PI), mat(c, 0.5), 0, 0.04, -0.08).rotation.y = Math.PI / 2; },
+        flat: (g, c) => { part(g, RBs(0.085, 0.012, 0.24, 0.005), mat(0x6b5a4a), 0, 0.006, 0); part(g, S, mat(c, 0.4), 0, 0.02, 0.04, 0.043, 0.025, 0.08);
+          part(g, RBs(0.085, 0.025, 0.06, 0.012), mat(c, 0.4), 0, 0.025, -0.09); },
+        sandal: (g, c) => { part(g, RBs(0.09, 0.025, 0.25, 0.01), mat(0xd9c4a5, 0.8), 0, 0.012, 0);
+          for (const z of [0.06, -0.01]) part(g, RBs(0.095, 0.02, 0.04, 0.008), mat(c, 0.7), 0, 0.035, z); }
+      };
+      const pairs = [                                   // top row → bottom row, left → right (as seen from the room)
+        ['heel', 0xe9d7c3, true], ['heel', 0xefe6dc, true], ['heel', 0xf2f2f0, true],
+        ['heel', 0xe8d9c4], ['heel', 0xf1e8dc], ['heel', 0xe9edc9],
+        ['heel', 0xd9b9a0], ['heel', 0xf3eee8], ['heel', 0x5a4030],
+        ['flat', 0xf3ece2], ['sneaker', 0x8f9599, 0x222222], ['sneaker', 0x9aa0a4, 0x1b1b1b],
+        ['boot', 0x8c5a3c], ['sneaker', 0x2b2b2b, 0xb6d12a], ['sneaker', 0xe9e9e9, 0x2b2b2b],
+        ['clog', 0xf4f4f2], ['clog', 0xeef3ee], ['sandal', 0xd8b98f],
+        ['boot', 0x8fa284], ['boot', 0x8a5232], ['sneaker', 0xf1f1ef, 0xd8d8d8],
+        ['boot', 0x9aaa8c], ['boot', 0x7d4a2e], ['sneaker', 0xf4f4f2, 0xd22c2c],
+      ];
+      pairs.forEach(([type, c, c2], i) => {
+        const row = Math.floor(i / 3), col = i % 3, x = (col - 1) * (cw + 0.016), y = Hc - 0.035 - (row + 1) * rh + 0.008;
+        for (const sgn of [-1, 1]) { const g = new THREE.Group(); g.position.set(x + sgn * 0.056, y, 0.0); g.rotation.y = sgn * 0.05; cab.add(g);
+          SHOE[type](g, c, c2); }                                                                          // left + right shoe, toes slightly splayed
+      });
+    }
     // bouclé swivel chair by the coffee table, facing the TV
     { const CXc = 0.70, CZc = 3.374;                // 1.2 m further from the TV along its line of sight
       const boucle = (() => { const [c, g] = canvas(256, 256); const R = rng(77); g.fillStyle = '#e9e3d6'; g.fillRect(0, 0, 256, 256);
@@ -1303,7 +1359,8 @@ function drawMap() {
     mg.fillStyle = '#2f2d2b'; mg.beginPath(); mg.arc(X(1.2), Z(SW - 1.95), 0.5 * s, 0, 6.283); mg.fill();
     rect(TVW - 0.45, pZ(428.28) - 3.23, TVW, pZ(428.28) - 0.3, '#b89470');
     mg.fillStyle = '#6a4a34'; mg.beginPath(); mg.arc(X(-2.75), Z(pZ(482.04) + 0.3), 0.6 * s, 0, 6.283); mg.fill();
-    mg.fillStyle = '#e9e3d6'; mg.beginPath(); mg.arc(X(0.70), Z(3.374), 0.44 * s, 0, 6.283); mg.fill(); }
+    mg.fillStyle = '#e9e3d6'; mg.beginPath(); mg.arc(X(0.70), Z(3.374), 0.44 * s, 0, 6.283); mg.fill();
+    rect(TVW - 0.355, 1.0, TVW - 0.005, 1.9, '#f3f3f1'); }
   WALLS.forEach(([x0, y0, x1, y1, ops = []]) => {
     prect(x0, y0, x1, y1, '#f2f2f2');
     const alongX = (x1 - x0) >= (y1 - y0);
