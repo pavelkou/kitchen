@@ -730,6 +730,33 @@ async function build() {
       add(new THREE.BoxGeometry(0.04, 1.245, 2.214), tvGlass, TVW - 0.03, 1.42, cz);                 // 100" TV (221 × 125 cm) on the wall
       add(new THREE.BoxGeometry(0.1, 0.07, 1.2), blackMetal, TVW - 0.28, 0.575, cz);                 // soundbar
       plant(TVW - 0.25, 0.54, cz - 1.2, 1.0); }
+    // bouclé swivel chair by the coffee table, facing the TV
+    { const CXc = 1.9, CZc = 3.45;
+      const boucle = (() => { const [c, g] = canvas(256, 256); const R = rng(77); g.fillStyle = '#e9e3d6'; g.fillRect(0, 0, 256, 256);
+        for (let i = 0; i < 5000; i++) { const x = R() * 256, y = R() * 256, v = 205 + R() * 45; g.fillStyle = `rgba(${v},${v - 4},${v - 14},0.8)`; g.beginPath(); g.arc(x, y, 1 + R() * 1.6, 0, 6.283); g.fill(); }
+        const t = toTex(c); t.repeat.set(4, 2); return new THREE.MeshStandardMaterial({ map: t, roughness: 1 }); })();
+      const g = new THREE.Group(); g.position.set(CXc, 0, CZc); scene.add(g);
+      g.rotation.y = Math.atan2(TVW - 0.03 - CXc, (pZ(428.28) - 0.30 - 2.93 / 2) - CZc);     // local +z → toward the TV
+      add(new THREE.CylinderGeometry(0.31, 0.33, 0.08, 64), oakM, 0, 0.04, 0, 0, g);           // round wooden swivel base
+      // seat cushion: solid lathe
+      const seatPts = [[0, 0.1], [0.32, 0.1], [0.355, 0.13], [0.36, 0.38], [0.34, 0.45], [0.28, 0.48], [0, 0.49]].map(([r, y]) => new THREE.Vector2(r, y));
+      add(new THREE.LatheGeometry(new THREE.SplineCurve(seatPts).getPoints(40), 64), boucle, 0, 0, 0, 0, g);
+      // wrap-around back + arms: a rounded closed profile swept around ~260°, lower toward the arm ends
+      const prof = []; const r0 = 0.27, r1 = 0.44, y0 = 0.12, y1 = 0.8, k = 0.075;
+      const arc = (cx, cy, a0, a1) => { for (let i = 0; i <= 8; i++) { const a = a0 + (a1 - a0) * i / 8; prof.push(new THREE.Vector2(cx + Math.cos(a) * k, cy + Math.sin(a) * k)); } };
+      arc(r1 - k, y0 + k, -Math.PI / 2, 0); arc(r1 - k, y1 - k, 0, Math.PI / 2); arc(r0 + k, y1 - k, Math.PI / 2, Math.PI); arc(r0 + k, y0 + k, Math.PI, 1.5 * Math.PI);
+      prof.push(prof[0].clone());
+      const PS0 = 0.29 * Math.PI, PL = 2 * Math.PI - 2 * PS0;
+      const shell = new THREE.LatheGeometry(prof, 96, PS0, PL), sp = shell.attributes.position;
+      for (let i = 0; i < sp.count; i++) { const x = sp.getX(i), z = sp.getZ(i); let phi = Math.atan2(x, z); if (phi < 0) phi += 2 * Math.PI;
+        const d = Math.min(1, Math.abs(phi - Math.PI) / (Math.PI - PS0)), h = 1 - 0.36 * Math.pow(d, 1.6);
+        sp.setY(i, y0 + (sp.getY(i) - y0) * h); }
+      shell.computeVertexNormals();
+      add(shell, boucle, 0, 0, 0, 0, g).material.side = THREE.DoubleSide;
+      for (const sgn of [-1, 1]) { const phi = sgn > 0 ? PS0 : 2 * Math.PI - PS0, rm = (r0 + r1) / 2, hEnd = (y1 - y0) * 0.64;
+        const cap = add(new THREE.SphereGeometry(1, 32, 20), boucle, Math.sin(phi) * rm, y0 + hEnd / 2, Math.cos(phi) * rm, 0, g);
+        cap.scale.set((r1 - r0) / 2, hEnd / 2, 0.06); cap.rotation.y = phi; }                                // rounded arm ends
+    }
     // framed art above the sofa (140 × 95, black frame)
     { const y = 1.62, w = 1.4, h = 0.95;
       add(new THREE.BoxGeometry(w, h, 0.03), blackMetal, SX, y, SW - 0.016);
@@ -1118,7 +1145,8 @@ function drawMap() {
   { const SW = pZ(368.76), SX = (pX(279) + pX(513.2)) / 2, TVW = pX(542.7);                      // living furniture
     rect(SX - 1.3, SW - 1.0, SX + 1.3, SW, '#cfc6b8'); rect(SX - 1.5, SW - 2.85, SX + 1.5, SW - 0.85, 'rgba(185,173,154,.6)');
     rect(TVW - 0.45, pZ(428.28) - 3.23, TVW, pZ(428.28) - 0.3, '#b89470');
-    mg.fillStyle = '#6a4a34'; mg.beginPath(); mg.arc(X(-2.75), Z(pZ(482.04) + 0.3), 0.6 * s, 0, 6.283); mg.fill(); }
+    mg.fillStyle = '#6a4a34'; mg.beginPath(); mg.arc(X(-2.75), Z(pZ(482.04) + 0.3), 0.6 * s, 0, 6.283); mg.fill();
+    mg.fillStyle = '#e9e3d6'; mg.beginPath(); mg.arc(X(1.9), Z(3.45), 0.44 * s, 0, 6.283); mg.fill(); }
   WALLS.forEach(([x0, y0, x1, y1, ops = []]) => {
     prect(x0, y0, x1, y1, '#f2f2f2');
     const alongX = (x1 - x0) >= (y1 - y0);
@@ -1188,6 +1216,7 @@ const STATIONS = [
   [-1.6, 1.6, 1.05],                                    // sink
   [0.61, 1.6, 1.35],                                    // fridge
   [3.5, 1.6, 0.75],                                     // main entrance
+  [1.86, 1.12, 3.45],                                   // sitting in the swivel chair
   [(pX(279) + pX(513.2)) / 2, 1.12, pZ(368.76) - 0.55], // sitting on the sofa
   [-2.75 + 0.51, 1.15, pZ(482.04) + 0.3 + 0.51],        // dining chair nearest the balcony and the sofa
   [-2.28, 1.37, 2.95],                                  // island stool to the right of the schnauzer
