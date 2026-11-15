@@ -751,7 +751,7 @@ async function build() {
       add(new THREE.BoxGeometry(0.1, 0.07, 1.2), blackMetal, TVW - 0.28, 0.575, cz);                 // soundbar
       plant(TVW - 0.25, 0.54, cz - 1.2, 1.0); }
     // bouclé swivel chair by the coffee table, facing the TV
-    { const CXc = 1.9, CZc = 3.45;
+    { const CXc = 0.70, CZc = 3.374;                // 1.2 m further from the TV along its line of sight
       const boucle = (() => { const [c, g] = canvas(256, 256); const R = rng(77); g.fillStyle = '#e9e3d6'; g.fillRect(0, 0, 256, 256);
         for (let i = 0; i < 5000; i++) { const x = R() * 256, y = R() * 256, v = 205 + R() * 45; g.fillStyle = `rgba(${v},${v - 4},${v - 14},0.8)`; g.beginPath(); g.arc(x, y, 1 + R() * 1.6, 0, 6.283); g.fill(); }
         const t = toTex(c); t.repeat.set(4, 2); return new THREE.MeshStandardMaterial({ map: t, roughness: 1 }); })();
@@ -1166,7 +1166,7 @@ function drawMap() {
     rect(SX - 1.3, SW - 1.0, SX + 1.3, SW, '#cfc6b8'); rect(SX - 1.5, SW - 2.85, SX + 1.5, SW - 0.85, 'rgba(185,173,154,.6)');
     rect(TVW - 0.45, pZ(428.28) - 3.23, TVW, pZ(428.28) - 0.3, '#b89470');
     mg.fillStyle = '#6a4a34'; mg.beginPath(); mg.arc(X(-2.75), Z(pZ(482.04) + 0.3), 0.6 * s, 0, 6.283); mg.fill();
-    mg.fillStyle = '#e9e3d6'; mg.beginPath(); mg.arc(X(1.9), Z(3.45), 0.44 * s, 0, 6.283); mg.fill(); }
+    mg.fillStyle = '#e9e3d6'; mg.beginPath(); mg.arc(X(0.70), Z(3.374), 0.44 * s, 0, 6.283); mg.fill(); }
   WALLS.forEach(([x0, y0, x1, y1, ops = []]) => {
     prect(x0, y0, x1, y1, '#f2f2f2');
     const alongX = (x1 - x0) >= (y1 - y0);
@@ -1236,7 +1236,7 @@ const STATIONS = [
   [-1.6, 1.6, 1.05],                                    // sink
   [0.61, 1.6, 1.35],                                    // fridge
   [3.5, 1.6, 0.75],                                     // main entrance
-  [1.86, 1.12, 3.45],                                   // sitting in the swivel chair
+  [0.66, 1.12, 3.374],                                  // sitting in the swivel chair
   [(pX(279) + pX(513.2)) / 2 - 0.2, 1.12, pZ(368.76) - 0.55], // sitting on the sofa
   [-2.75 + 0.51, 1.15, pZ(482.04) + 0.3 + 0.51],        // dining chair nearest the balcony and the sofa
   [-2.28, 1.37, 2.95],                                  // island stool to the right of the schnauzer
