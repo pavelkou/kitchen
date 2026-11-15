@@ -1199,6 +1199,27 @@ async function build() {
     });
   })();
 
+  /* ----- wall clock between the kitchen and dining windows, above the espresso corner (shows the real local time) ----- */
+  { const g = new THREE.Group(); g.position.set(-4 + 0.002, 1.95, (pZ(643.8) + pZ(578.52)) / 2); g.rotation.y = Math.PI / 2; scene.add(g);  // faces +x
+    const oakC = new THREE.MeshStandardMaterial({ map: makeWood('#d4b48c', 71), roughness: 0.5 });
+    const [cv, cg] = canvas(512, 512); cg.fillStyle = '#f7f6f2'; cg.fillRect(0, 0, 512, 512);
+    cg.fillStyle = '#3a3633'; cg.strokeStyle = '#3a3633';
+    for (let i = 0; i < 60; i++) { const a = i / 60 * Math.PI * 2, r0 = i % 5 ? 236 : 226, r1 = 246;
+      cg.lineWidth = i % 5 ? 2 : 4; cg.beginPath(); cg.moveTo(256 + Math.sin(a) * r0, 256 - Math.cos(a) * r0); cg.lineTo(256 + Math.sin(a) * r1, 256 - Math.cos(a) * r1); cg.stroke(); }
+    cg.font = '500 46px "Helvetica Neue", Arial, sans-serif'; cg.textAlign = 'center'; cg.textBaseline = 'middle';
+    for (let h = 1; h <= 12; h++) { const a = h / 12 * Math.PI * 2; cg.fillText(String(h), 256 + Math.sin(a) * 186, 258 - Math.cos(a) * 186); }
+    const face = new THREE.MeshStandardMaterial({ map: toTex(cv), roughness: 0.7 });
+    const cyl = (r, d, m, z) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(r, r, d, 64), m); o.rotation.x = Math.PI / 2; o.position.z = z; o.userData.keep = true; o.castShadow = true; g.add(o); return o; };
+    cyl(0.18, 0.04, oakC, 0.02);                                                 // light-oak case
+    const fc = new THREE.Mesh(new THREE.CircleGeometry(0.162, 64), face); fc.position.z = 0.041; fc.userData.keep = true; g.add(fc);
+    const handM = new THREE.MeshStandardMaterial({ color: 0x8a5a36, roughness: 0.4, metalness: 0.3 });
+    const hand = (len, w, z) => { const p = new THREE.Group(); p.position.z = z; g.add(p);
+      const b = new THREE.Mesh(new THREE.BoxGeometry(w, len, 0.002), handM); b.position.y = len / 2 - 0.012; b.userData.keep = true; p.add(b); return p; };
+    const hH = hand(0.085, 0.007, 0.044), mH = hand(0.125, 0.005, 0.046);
+    cyl(0.009, 0.008, handM, 0.048);                                             // centre cap
+    ANIMS.push(() => { const d = new Date(), m = d.getMinutes() + d.getSeconds() / 60, h = (d.getHours() % 12) + m / 60;
+      mH.rotation.z = -m / 60 * Math.PI * 2; hH.rotation.z = -h / 12 * Math.PI * 2; });
+  }
   const bulkSpots = [];
   /* ----- A/C bulkhead: plasterboard box 45 cm below the ceiling, as deep as the hallway (~104 cm), running from the
      hallway along the bedrooms wall to the balcony door's edge; three linear supply vents face the living room ----- */
