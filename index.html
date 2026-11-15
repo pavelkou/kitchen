@@ -584,29 +584,30 @@ async function build() {
   }
   const TZ = 0.6;
   const n0 = scene.children.length;
-  B(1.2, 0, 0, 2.0, 0.1, TZ - 0.06, M.dark);
-  B(1.2, 0.1, 0, 2.0, 2.65, TZ - 0.02, carcassFront);
-  grid(1.2, 2.0, 0.103, 0.42, TZ - 0.019, TZ, 1, 1);
-  oven(1.2, 2.0, 0.425, 1.03, TZ);
-  oven(1.2, 2.0, 1.035, 1.56, TZ);
+  // oven column 60 cm (x 1.2–1.8 before the DX shift); the fridge niche widens to take the freed 20 cm
+  const OC = 1.8;
+  B(1.2, 0, 0, OC, 0.1, TZ - 0.06, M.dark);
+  B(1.2, 0.1, 0, OC, 2.65, TZ - 0.02, carcassFront);
+  grid(1.2015, OC - 0.0015, 0.103, 0.42, TZ - 0.019, TZ, 1, 1);
+  oven(1.2, OC, 0.425, 1.03, TZ);
+  oven(1.2, OC, 1.035, 1.56, TZ);
   // tall-unit fronts are inset 1.5 mm at each side so every cabinet meets its neighbour with the same 3 mm shadow gap
-  grid(1.2015, 1.9985, 1.565, 1.948, TZ - 0.019, TZ, 1, 1);
-  grid(1.2015, 1.9985, 1.953, 2.65, TZ - 0.019, TZ, 1, 1);
-  // fridge niche
-  // niche 92.3 cm so the run ends exactly at the end of the 567 cm wall
-  B(2.0, 1.86, 0, 2.923, 1.95, 0.56, M.dark);
-  B(2.0, 1.95, 0, 2.923, 2.65, TZ - 0.02, carcassFront); grid(2.0015, 2.9215, 1.953, 2.65, TZ - 0.019, TZ, 1, 1);   // one door above the fridge
-  // fridge flush with the cabinet fronts (z = 0.60) and tall enough to leave only a 1 cm gap under the top cabinet
-  const FT = 0.598, FH = 1.94;
-  B(2.017, 0.05, 0.02, 2.907, FH, FT, M.fridge);
-  B(2.08, 0.0, 0.5, 2.87, 0.05, 0.58, M.dark);                                       // recessed toe-kick grille
-  B(2.462, 0.06, FT, 2.468, FH - 0.01, FT + 0.002, M.dark);                          // door split
-  for (const hx of [2.42, 2.49]) {
+  grid(1.2015, OC - 0.0015, 1.565, 1.948, TZ - 0.019, TZ, 1, 1);
+  grid(1.2015, OC - 0.0015, 1.953, 2.65, TZ - 0.019, TZ, 1, 1);
+  // fridge niche 112.3 cm (run still ends exactly at the end of the 567 cm wall)
+  B(OC, 1.86, 0, 2.923, 1.95, 0.56, M.dark);
+  B(OC, 1.95, 0, 2.923, 2.65, TZ - 0.02, carcassFront); grid(OC + 0.0015, 2.9215, 1.953, 2.65, TZ - 0.019, TZ, 1, 1);   // one door above the fridge
+  // wide French-door fridge (109 cm) flush with the cabinet fronts, 1 cm under the top cabinet
+  const FT = 0.598, FH = 1.94, F0 = OC + 0.017, F1 = 2.907, FC = (F0 + F1) / 2;
+  B(F0, 0.05, 0.02, F1, FH, FT, M.fridge);
+  B(F0 + 0.06, 0.0, 0.5, F1 - 0.04, 0.05, 0.58, M.dark);                              // recessed toe-kick grille
+  B(FC - 0.003, 0.06, FT, FC + 0.003, FH - 0.01, FT + 0.002, M.dark);                // door split
+  for (const hx of [FC - 0.05, FC + 0.03]) {
     B(hx, 0.8, FT + 0.022, hx + 0.02, 1.7, FT + 0.04, M.steel);
     B(hx + 0.005, 0.83, FT, hx + 0.015, 0.85, FT + 0.023, M.steel); B(hx + 0.005, 1.65, FT, hx + 0.015, 1.67, FT + 0.023, M.steel);
   }
-  B(2.12, 1.0, FT, 2.33, 1.42, FT + 0.004, M.glassBlack);
-  B(2.17, 1.34, FT + 0.004, 2.28, 1.385, FT + 0.006, M.display, { cast: false });
+  B(F0 + 0.1, 1.0, FT, F0 + 0.31, 1.42, FT + 0.004, M.glassBlack);
+  B(F0 + 0.15, 1.34, FT + 0.004, F0 + 0.26, 1.385, FT + 0.006, M.display, { cast: false });
   // pantry, 60 cm
   B(2.923, 0, 0, 3.523, 0.1, TZ - 0.06, M.dark);
   B(2.923, 0.1, 0, 3.523, 2.65, TZ - 0.02, carcassFront);
@@ -1356,7 +1357,7 @@ const vfwd = new THREE.Vector3();
 const STATIONS = [
   [-3.55, 1.6, 1.15],                                   // espresso machine
   [-1.6, 1.6, 1.05],                                    // sink
-  [0.61, 1.6, 1.35],                                    // fridge
+  [0.51, 1.6, 1.35],                                    // fridge
   [3.5, 1.6, 0.75],                                     // main entrance
   [0.66, 1.12, 3.374],                                  // sitting in the swivel chair
   [(pX(279) + pX(513.2)) / 2 - 0.2, 1.12, pZ(369.24) - 0.55], // sitting on the sofa
@@ -1368,7 +1369,7 @@ const STATIONS = [
 const STATION_LOOK = [
   [-3.785, 1.1, 2.1],       // the Lelit
   [-1.6, 0.9, 0.3],         // into the sink
-  [0.61, 1.2, 0.35],        // fridge doors
+  [0.51, 1.2, 0.35],        // fridge doors
   [-1.0, 1.2, 3.0],         // across the living room to the kitchen
   [4.04, 1.42, 3.59],       // the TV
   [-1.0, 1.2, 1.0],         // toward the kitchen
