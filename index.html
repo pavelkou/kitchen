@@ -322,7 +322,7 @@ async function build() {
   const ceramic = map => new THREE.MeshPhysicalMaterial({ map, roughness: 0.09, clearcoat: 0.75, clearcoatRoughness: 0.035 });
   const M = {
     cerA: ceramic(marbleA), cerB: ceramic(marbleB),
-    wall: new THREE.MeshStandardMaterial({ color: 0xeeede9, roughness: 0.92 }),
+    wall: new THREE.MeshStandardMaterial({ color: 0xf2f2f0, roughness: 0.9 }),   // white paint = plasterboard colour
     ceiling: new THREE.MeshStandardMaterial({ color: 0xf5f5f3, roughness: 0.95 }),
     floor: new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.62 }),
     cab: new THREE.MeshStandardMaterial({ color: 0xf1f1ef, roughness: 0.42 }),
@@ -1228,7 +1228,25 @@ async function build() {
   scene.add(sun, sun.target);
   scene.add(new THREE.HemisphereLight(0xffffff, 0xe6e2da, 0.35));
 
-  return { M, spots, led, sun, islCer, islCab };
+  /* ----- three white cone pendants with wooden necks above the island (switch with the ceiling lights) ----- */
+  const pendants = [];
+  { const white = new THREE.MeshStandardMaterial({ color: 0xf4f4f2, roughness: 0.5, side: THREE.DoubleSide });
+    const inner = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6, side: THREE.BackSide });
+    const oak = new THREE.MeshStandardMaterial({ map: makeWood('#c49a6c', 31), roughness: 0.55 });
+    const cz = (1.75 + 2.65) / 2, bottom = 1.62;                                    // shade rim ~70 cm above the island top
+    for (const x of [-3.5, -3.0, -2.5]) {
+      const m = (geo, mat, y, cast = true) => { const o = new THREE.Mesh(geo, mat); o.position.set(x, y, cz); o.castShadow = cast; scene.add(o); return o; };
+      m(new THREE.CylinderGeometry(0.045, 0.045, 0.02, 32), white, RH - 0.01);                                  // ceiling canopy
+      m(new THREE.CylinderGeometry(0.0035, 0.0035, RH - bottom - 0.25, 8), white, (RH + bottom + 0.25) / 2);      // cord
+      m(new THREE.CylinderGeometry(0.022, 0.04, 0.075, 32), oak, bottom + 0.215);                                 // wooden neck
+      m(new THREE.CylinderGeometry(0.035, 0.16, 0.18, 64, 1, true), white, bottom + 0.09);                        // cone shade
+      m(new THREE.CylinderGeometry(0.034, 0.158, 0.178, 64, 1, true), inner, bottom + 0.09, false);
+      m(new THREE.CircleGeometry(0.05, 24), M.lamp, bottom + 0.12, false).rotation.x = Math.PI / 2;              // bulb glow
+      const l = new THREE.SpotLight(0xfff4e6, 3, 0, 0.75, 0.6, 2); l.position.set(x, bottom + 0.1, cz); l.target.position.set(x, 0, cz);
+      scene.add(l, l.target); pendants.push(l);
+    }
+  }
+  return { M, spots, pendants, led, sun, islCer, islCab };
 }
 
 /* ---------------- light probe (bounced light + real reflections) ---------------- */
@@ -1533,7 +1551,7 @@ function mergeStatic(S) {
 /* ---------------- start ---------------- */
 (async () => {
   const S = await build();
-  $('cSpots').addEventListener('change', e => { const on = e.target.checked; S.spots.forEach(s => s.intensity = on ? 9 : 0); S.M.lamp.emissiveIntensity = on ? 4.5 : 0; rebake(); });
+  $('cSpots').addEventListener('change', e => { const on = e.target.checked; S.spots.forEach(s => s.intensity = on ? 9 : 0); S.pendants.forEach(p => p.intensity = on ? 3 : 0); S.M.lamp.emissiveIntensity = on ? 4.5 : 0; rebake(); });
   $('cLed').addEventListener('change', e => { const on = e.target.checked; S.led.intensity = on ? 14 : 0; S.M.led.emissiveIntensity = on ? 5 : 0; rebake(); });
   $('cSun').addEventListener('change', e => { S.sun.intensity = e.target.checked ? 4.5 : 0; rebake(); });
   $('cAO').addEventListener('change', e => { aoOn = e.target.checked; if (aoOn && !composer) makeComposer(); dirty = true; });
