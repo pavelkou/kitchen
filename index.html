@@ -209,13 +209,13 @@ function makeMarble(seed) {
       a += (R() - 0.5) * 0.18 + Math.sin(i * 0.006 + ph) * 0.012;
       x += Math.cos(a) * 5; y += Math.sin(a) * 5;
       pts.push([x, y, w * (0.22 + 0.78 * Math.pow(Math.abs(Math.sin(i * 0.0025 + ph)), 0.7))]);
-      if (depth < 2 && R() < 0.0035) trace(x, y, a + (R() < 0.5 ? -1 : 1) * (0.4 + R() * 0.6), len * (0.15 + R() * 0.3), w * 0.55, col, str * 0.8, depth + 1);
+      if (depth < 2 && R() < 0.0021) trace(x, y, a + (R() < 0.5 ? -1 : 1) * (0.4 + R() * 0.6), len * (0.15 + R() * 0.3), w * 0.55, col, str * 0.8, depth + 1);
     }
     veins.push({ pts, col, str });
   }
   const grey = '112,110,106', gold = '166,140,100';
-  for (let i = 0; i < 6; i++) trace(R() * W, R() * H, -0.7 + R() * 0.5 + (R() < 0.3 ? Math.PI : 0), 1800 + R() * 1800, 1.4 + R() * 1.8, R() < 0.45 ? gold : grey, 1, 0);
-  for (let i = 0; i < 16; i++) trace(R() * W, R() * H, -0.9 + R() * 1.2, 300 + R() * 900, 0.5 + R() * 0.8, R() < 0.4 ? gold : grey, 0.6, 1);
+  for (let i = 0; i < 4; i++) trace(R() * W, R() * H, -0.7 + R() * 0.5 + (R() < 0.3 ? Math.PI : 0), 1800 + R() * 1800, 1.4 + R() * 1.8, R() < 0.45 ? gold : grey, 1, 0);
+  for (let i = 0; i < 10; i++) trace(R() * W, R() * H, -0.9 + R() * 1.2, 300 + R() * 900, 0.5 + R() * 0.8, R() < 0.4 ? gold : grey, 0.6, 1);
   g.lineCap = 'round'; g.lineJoin = 'round';
   const passes = [[10, 0.028, '196,176,142'], [4, 0.06, null], [1.6, 0.17, null]];
   for (const v of veins) for (const [sc, al, hc] of passes) {
