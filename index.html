@@ -328,6 +328,7 @@ async function build() {
     cab: new THREE.MeshStandardMaterial({ color: 0xf1f1ef, roughness: 0.42 }),
     gap: new THREE.MeshStandardMaterial({ color: 0x8e8e8c, roughness: 0.8 }),
     dark: new THREE.MeshStandardMaterial({ color: 0x3b3b3c, roughness: 0.6 }),
+    gola: new THREE.MeshStandardMaterial({ color: 0xc8cacc, metalness: 1, roughness: 0.32 }),   // anodised-aluminium handle channel
     glassBlack: new THREE.MeshPhysicalMaterial({ color: 0x060607, roughness: 0.05, clearcoat: 1, clearcoatRoughness: 0.02 }),
     cooktop: new THREE.MeshPhysicalMaterial({ map: cookTex, roughness: 0.05, clearcoat: 1, clearcoatRoughness: 0.02, sheen: 0.3, sheenColor: 0xffffff }),
     steel: new THREE.MeshStandardMaterial({ color: 0xcfcfcf, metalness: 1, roughness: 0.27 }),
@@ -549,7 +550,7 @@ async function build() {
   B(SX0, 0.1, 0, SX1, 0.68, BZ - 0.02, carcassFront);
   B(SX1, 0.1, 0, CX1, CT - CTH, BZ - 0.02, carcassFront);
   B(SX0, 0.68, SZ1 + 0.01, SX1, CT - CTH, BZ - 0.02, carcassFront);
-  B(CX0, 0.84, BZ - 0.05, CX1, CT - CTH, BZ - 0.015, M.dark); // handle-less "gola" channel
+  B(CX0, 0.84, BZ - 0.05, CX1, CT - CTH, BZ - 0.015, M.gola); // handle-less "gola" channel
   for (const [a, b, n] of [[CX0, -3.4, 3], [-3.4, -2.8, 3], [-2.8, -2.1, 1], [-2.1, -1.6, 1], [-1.6, -1.1, 1], [-1.1, CX1, 1]])
     grid(a + 0.0015, b - 0.0015, 0.103, 0.835, BZ - 0.019, BZ, 1, n);
   // ceramic countertop with an undermount sink cut-out
@@ -648,7 +649,7 @@ async function build() {
   const islCer = new THREE.Group(), islCab = new THREE.Group(); scene.add(islCer, islCab); islCer.visible = false;
   B(IX0 + ST, 0, IZ0, IX1 - ST, IT - ST, IZ0 + 0.012, M.cerB, { uv: iu, parent: islCer });
   B(IX0 + ST, 0, IZ0 + 0.07, IX1 - ST, 0.1, IZ0 + 0.04 + 0.001, M.dark, { parent: islCab });
-  B(IX0 + ST, 0.835, IZ0 + 0.03, IX1 - ST, IT - ST, IZ0 + 0.041, M.dark, { parent: islCab });
+  B(IX0 + ST, 0.835, IZ0 + 0.03, IX1 - ST, IT - ST, IZ0 + 0.041, M.gola, { parent: islCab });
   grid(IX0 + ST + 0.002, IX1 - ST - 0.002, 0.103, 0.835, IZ0 + 0.02, IZ0 + 0.039, 3, 3, M.cab, islCab);
 
   /* ----- bar stools (oak seat/back, graphite frame) ----- */
