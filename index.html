@@ -117,6 +117,7 @@ window.__ok = true;
 
 const $ = id => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+let dogTick = null;
 const DX = -1.85; // tall units moved left: oven column starts 60 cm right of the sink
 const isMobile = matchMedia('(pointer:coarse)').matches;
 const nextFrame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
@@ -157,7 +158,7 @@ const WALLS = [
   [147.96, 733.52, 357.72, 748.88],                                          // safe room bottom
   [164.28, 390.32, 363.0, 396.08],                                           // bedroom 2 | 3
   [363.0, 229.04, 368.76, 560.72, [[232, 279, 0, 2.1, 'door'], [513.2, 560.0, 0, 2.1, 'door']]], // bedrooms | living
-  [428.28, 546.32, 510.84, 552.08],                                          // guest WC top
+  [428.28, 542.7, 510.84, 552.08],                                           // guest WC top (flush with the stair-core wall: one flat TV wall)
   [510.84, 542.7, 745.08, 556.5],                                            // stair-core wall (living room side)
   [510.84, 556.5, 530.0, 836.24],                                            // stair-core wall (bathroom side)
   [428.28, 552.08, 434.04, 676.88, [[598.16, 632.72, 0, 2.1, 'door']]],     // guest WC door wall
@@ -719,7 +720,7 @@ async function build() {
       add(new THREE.CylinderGeometry(0.035, 0.035, 0.08, 20), blackMetal, SX + 0.2, 0.44, cz - 0.15);
       plant(SX - 0.02, 0.465, cz + 0.05, 0.9); }
     // TV wall: 220 cm fluted oak console + 75" TV + soundbar on the stair-core wall, facing the dining window (−x)
-    { const cz = 1.9, L = 2.2;
+    { const L = 2.2, cz = pZ(428.28) - 0.30 - L / 2;   // right end 30 cm from the wall's right end
       add(new THREE.BoxGeometry(0.45, 0.42, L), oakM, TVW - 0.225, 0.12 + 0.21, cz);
       for (let i = 0; i < 44; i++) add(new THREE.CylinderGeometry(0.012, 0.012, 0.4, 8), oakM, TVW - 0.452, 0.33, cz - L / 2 + 0.025 + i * (L - 0.05) / 43);  // fluting
       add(new THREE.BoxGeometry(0.4, 0.12, L - 0.1), blackMetal, TVW - 0.24, 0.06, cz);               // recessed plinth
@@ -731,7 +732,7 @@ async function build() {
       add(new THREE.BoxGeometry(w, h, 0.03), blackMetal, SX, y, SW - 0.016);
       add(new THREE.PlaneGeometry(w - 0.06, h - 0.06), artM, SX, y, SW - 0.033, Math.PI); }
     // dining: Ø120 walnut table on a fluted pedestal, 4 upholstered chairs, centred on the dining window
-    { const cx = -2.75, cz = pZ(482.04);
+    { const cx = -2.75, cz = pZ(482.04) + 0.3;     // 30 cm toward the balcony
       add(new THREE.CylinderGeometry(0.6, 0.6, 0.035, 72), walnutM, cx, 0.74, cz);
       add(new THREE.CylinderGeometry(0.24, 0.27, 0.7, 40), walnutM, cx, 0.37, cz);
       for (let i = 0; i < 32; i++) { const a = i / 32 * 6.283; add(new THREE.CylinderGeometry(0.016, 0.016, 0.68, 6), walnutM, cx + Math.cos(a) * 0.255, 0.37, cz + Math.sin(a) * 0.255); }
@@ -746,6 +747,68 @@ async function build() {
         for (const [lx, lz] of [[-0.2, -0.18], [0.2, -0.18], [-0.2, 0.18], [0.2, 0.18]]) {
           const l = add(new THREE.CylinderGeometry(0.012, 0.008, 0.45, 10), blackMetal, lx * 1.05, 0.215, lz * 1.05, 0, g); l.rotation.set(lz * 0.35, 0, -lx * 0.35); }
       } }
+  })();
+
+  /* ----- pendant above the round table (switched off; no light source) ----- */
+  { const cx = -2.75, cz = pZ(482.04) + 0.3, black = new THREE.MeshStandardMaterial({ color: 0x1b1b1c, roughness: 0.45, metalness: 0.3, side: THREE.DoubleSide });
+    const inner = new THREE.MeshStandardMaterial({ color: 0xf2f0ea, roughness: 0.6, side: THREE.BackSide });
+    const add = (geo, mat, y) => { const m = new THREE.Mesh(geo, mat); m.position.set(cx, y, cz); m.castShadow = true; scene.add(m); return m; };
+    add(new THREE.CylinderGeometry(0.06, 0.06, 0.015, 32), black, RH - 0.008);                  // ceiling canopy
+    add(new THREE.CylinderGeometry(0.003, 0.003, RH - 1.66, 6), black, (RH + 1.66) / 2);       // cord
+    const dome = add(new THREE.SphereGeometry(0.24, 48, 16, 0, Math.PI * 2, 0, Math.PI / 2), black, 1.52); dome.scale.y = 0.5;
+    const din = add(new THREE.SphereGeometry(0.236, 48, 16, 0, Math.PI * 2, 0, Math.PI / 2), inner, 1.52); din.scale.y = 0.49;
+    add(new THREE.CylinderGeometry(0.03, 0.03, 0.03, 20), black, 1.65);
+    add(new THREE.CylinderGeometry(0.05, 0.05, 0.004, 24), new THREE.MeshStandardMaterial({ color: 0xdedbd2, roughness: 0.3 }), 1.53); }
+
+  /* ----- miniature schnauzer (female, salt & pepper) sitting on the middle island stool, sniffing around ----- */
+  (function schnauzer() {
+    const fur = (base, seed, light) => { const [c, g] = canvas(256, 256); const R = rng(seed); g.fillStyle = base; g.fillRect(0, 0, 256, 256);
+      for (let i = 0; i < 2600; i++) { const x = R() * 256, y = R() * 256, l = 4 + R() * 9, v = R();
+        g.strokeStyle = v < 0.45 ? (light ? 'rgba(245,245,242,.7)' : 'rgba(215,215,212,.65)') : v < 0.8 ? 'rgba(40,40,42,.55)' : 'rgba(120,120,118,.5)';
+        g.lineWidth = 1 + R(); g.beginPath(); g.moveTo(x, y); g.lineTo(x + (R() - 0.5) * 3, y + l); g.stroke(); }
+      return new THREE.MeshStandardMaterial({ map: toTex(c), roughness: 1 }); };
+    const coat = fur('#5f5f60', 51, false), silver = fur('#b9b9b6', 52, true), darkEar = fur('#3a3a3b', 53, false);
+    const black = new THREE.MeshStandardMaterial({ color: 0x0b0b0b, roughness: 0.3 });
+    const dog = new THREE.Group(); scene.add(dog);
+    const add = (geo, mat, x, y, z, sx = 1, sy = 1, sz = 1, parent = dog) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.scale.set(sx, sy, sz); m.castShadow = true; m.receiveShadow = true; m.userData.keep = true; parent.add(m); return m; };
+    const S = new THREE.SphereGeometry(1, 28, 20);
+    // local frame: dog faces −z (toward the island), y up from the seat
+    add(S, coat, 0, 0.1, 0.05, 0.1, 0.085, 0.12);                       // haunches
+    const torso = add(S, coat, 0, 0.21, -0.01, 0.078, 0.15, 0.085); torso.rotation.x = -0.35;
+    add(S, silver, 0, 0.25, -0.075, 0.06, 0.09, 0.05);                 // light chest
+    for (const s of [-1, 1]) {
+      add(new THREE.CylinderGeometry(0.019, 0.017, 0.24, 12), silver, s * 0.04, 0.12, -0.085);      // front legs
+      add(S, silver, s * 0.04, 0.012, -0.1, 0.022, 0.014, 0.032);                                     // front paws
+      add(S, silver, s * 0.07, 0.015, -0.06, 0.025, 0.016, 0.045);                                    // hind feet
+    }
+    add(new THREE.CylinderGeometry(0.012, 0.016, 0.07, 10), coat, 0, 0.17, 0.16).rotation.x = -0.6; // docked tail
+    const head = new THREE.Group(); head.position.set(0, 0.38, -0.085); dog.add(head);
+    add(new THREE.CylinderGeometry(0.04, 0.05, 0.1, 14), coat, 0, -0.03, 0.03, 1, 1, 1, head).rotation.x = 0.4;  // neck
+    add(new RoundedBoxGeometry(0.095, 0.085, 0.1, 3, 0.03), coat, 0, 0.035, 0, 1, 1, 1, head);                   // skull
+    const muzzle = new THREE.Group(); muzzle.position.set(0, 0.012, -0.085); head.add(muzzle);
+    add(new RoundedBoxGeometry(0.07, 0.06, 0.085, 3, 0.022), coat, 0, 0, 0, 1, 1, 1, muzzle);
+    add(new RoundedBoxGeometry(0.074, 0.06, 0.08, 3, 0.025), silver, 0, -0.04, -0.005, 1, 1, 1, muzzle);       // beard
+    const nose = add(S, black, 0, 0.012, -0.045, 0.016, 0.012, 0.012, muzzle);
+    for (const s of [-1, 1]) {
+      add(S, black, s * 0.026, 0.045, -0.048, 0.009, 0.009, 0.006, head);                                   // eyes
+      const brow = add(new RoundedBoxGeometry(0.034, 0.012, 0.035, 2, 0.005), silver, s * 0.024, 0.062, -0.055, 1, 1, 1, head);
+      brow.rotation.set(0.35, 0, -s * 0.2);                                                                  // bushy eyebrows
+      const ear = add(new THREE.ConeGeometry(0.026, 0.05, 3), darkEar, s * 0.045, 0.07, -0.005, 1, 1, 0.35, head);
+      ear.rotation.set(0.3, 0, s * 2.3);                                                                     // folded ears
+    }
+    // on the middle stool (x = −2.76), seat top 0.67 m, facing the island
+    dog.position.set(-2.76, 0.672, 2.97);
+    let tPrev = 0;
+    dogTick = t => {
+      const s = t / 1000;
+      head.rotation.y = 0.65 * Math.sin(s * 0.55) + 0.18 * Math.sin(s * 1.9);
+      head.rotation.x = -0.12 + 0.1 * Math.sin(s * 0.8) + 0.04 * Math.sin(s * 2.7);
+      head.rotation.z = 0.06 * Math.sin(s * 0.45);
+      const burst = Math.sin(s * 1.1) > 0.25 ? 1 : 0;                        // sniffing bursts
+      muzzle.position.z = -0.085 - burst * 0.004 * (0.5 + 0.5 * Math.sin(s * 28));
+      nose.scale.x = 0.016 * (1 + burst * 0.12 * Math.sin(s * 28));
+      torso.scale.y = 0.15 * (1 + 0.012 * Math.sin(s * 3.2));               // breathing
+    };
   })();
 
   /* ----- lights ----- */
@@ -910,8 +973,8 @@ function drawMap() {
   rect(-4, 1.75, -2.0, 2.65, '#e9e6df');
   { const SW = pZ(368.76), SX = (pX(279) + pX(513.2)) / 2, TVW = pX(542.7);                      // living furniture
     rect(SX - 1.3, SW - 1.0, SX + 1.3, SW, '#cfc6b8'); rect(SX - 1.5, SW - 2.85, SX + 1.5, SW - 0.85, 'rgba(185,173,154,.6)');
-    rect(TVW - 0.45, 0.8, TVW, 3.0, '#b89470');
-    mg.fillStyle = '#6a4a34'; mg.beginPath(); mg.arc(X(-2.75), Z(pZ(482.04)), 0.6 * s, 0, 6.283); mg.fill(); }
+    rect(TVW - 0.45, pZ(428.28) - 2.5, TVW, pZ(428.28) - 0.3, '#b89470');
+    mg.fillStyle = '#6a4a34'; mg.beginPath(); mg.arc(X(-2.75), Z(pZ(482.04) + 0.3), 0.6 * s, 0, 6.283); mg.fill(); }
   WALLS.forEach(([x0, y0, x1, y1, ops = []]) => {
     prect(x0, y0, x1, y1, '#f2f2f2');
     const alongX = (x1 - x0) >= (y1 - y0);
@@ -949,6 +1012,7 @@ async function enterVR() {
   const canFS = !!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen) && !/iPhone/.test(navigator.userAgent);
   if (!standalone && !canFS) setTimeout(() => toast('iPhone Safari keeps its toolbars on web pages. For true full screen: exit VR, tap Share → Add to Home Screen, then open “Kitchen” from your home screen.', 7000), 1700);
   addEventListener('deviceorientation', onOri);
+  tour = { i: -1, t0: 0, fly: null }; nextStation();
   savedFov = tgt.fov; tgt.fov = 88; cur.fov = 88; stopAuto();
   stereo.setSize(innerWidth, innerHeight); showExit();
   try { if (navigator.wakeLock) wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {}
@@ -959,6 +1023,7 @@ async function enterVR() {
   }, 1500);
 }
 function exitVR() {
+  tour = null;
   vr = false; document.body.classList.remove('vr'); removeEventListener('deviceorientation', onOri);
   try { const ex = document.exitFullscreen || document.webkitExitFullscreen; if (document.fullscreenElement || document.webkitFullscreenElement) ex.call(document); } catch (e) {}
   try { wakeLock && wakeLock.release(); } catch (e) {} wakeLock = null;
@@ -973,6 +1038,26 @@ let vrWalk = false, vrT0 = 0;
 el.addEventListener('pointerdown', () => { if (!vr) return; vrWalk = true; vrT0 = performance.now(); });
 addEventListener('pointerup', () => { if (!vr || !vrWalk) return; vrWalk = false; if (performance.now() - vrT0 < 250) { calib = null; showExit(); } });
 const vfwd = new THREE.Vector3();
+// VR tour: every 10 s the camera flies (1 s, eased) to the next station; only position changes, head direction stays
+const STATIONS = [
+  [-3.55, 1.6, 1.15],                                   // espresso machine
+  [-1.6, 1.6, 1.05],                                    // sink
+  [0.61, 1.6, 1.35],                                    // fridge
+  [3.5, 1.6, 0.75],                                     // main entrance
+  [(pX(279) + pX(513.2)) / 2, 1.12, pZ(368.76) - 0.55], // sitting on the sofa
+  [-2.75 + 0.51, 1.15, pZ(482.04) + 0.3 + 0.51],        // dining chair nearest the balcony and the sofa
+  [-2.28, 1.37, 2.95],                                  // island stool to the right of the schnauzer
+];
+let tour = null;
+function nextStation() { tour.i = (tour.i + 1) % STATIONS.length; tour.fly = { t0: performance.now(), from: [cur.x, cur.y, cur.z], to: STATIONS[tour.i] }; }
+function tourTick(now) {
+  if (!tour) return;
+  if (tour.fly) {
+    const k = Math.min(1, (now - tour.fly.t0) / 1000), e = k * k * (3 - 2 * k), f = tour.fly.from, t = tour.fly.to;
+    cur.x = tgt.x = f[0] + (t[0] - f[0]) * e; cur.y = tgt.y = f[1] + (t[1] - f[1]) * e; cur.z = tgt.z = f[2] + (t[2] - f[2]) * e;
+    if (k >= 1) { tour.fly = null; tour.t0 = now; }
+  } else if (now - tour.t0 >= 10000) nextStation();
+}
 function renderVR() {
   camera.position.set(cur.x, cur.y, cur.z);
   if (camera.fov !== cur.fov) { camera.fov = cur.fov; camera.updateProjectionMatrix(); }
@@ -989,6 +1074,8 @@ function tick() {
   if (vr) {
     if (auto) tgt.yaw += 0.0015;
     for (const k of ['x', 'y', 'z', 'yaw', 'pitch', 'fov']) cur[k] += (tgt[k] - cur[k]) * 0.2;
+    tourTick(performance.now());
+    if (dogTick) dogTick(performance.now());
     if (vrWalk && performance.now() - vrT0 > 250) { vfwd.set(0, 0, -1).applyQuaternion(camera.quaternion); vfwd.y = 0; if (vfwd.lengthSq() > 1e-4) { vfwd.normalize(); cur.x += vfwd.x * 0.025; cur.z += vfwd.z * 0.025; tgt.x = cur.x; tgt.z = cur.z; } }
     renderVR(); return;
   }
@@ -999,7 +1086,8 @@ function tick() {
     if (Math.abs(d) > 1e-5) { cur[k] += d * 0.2; moving = true; } else cur[k] = tgt[k];
   }
   if (moving) { const f = $('fov'); if (Math.abs(f.value - cur.fov) > 0.5) f.value = Math.round(cur.fov); }
-  if (moving || auto || dirty) { apply(); draw(); drawMap(); dirty = false; }
+  if (dogTick) dogTick(performance.now());              // the dog is always animating, so every frame is drawn
+  apply(); draw(); if (moving || dirty) drawMap(); dirty = false;
 }
 
 
