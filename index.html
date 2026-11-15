@@ -1205,7 +1205,7 @@ async function build() {
     const plaster = new THREE.MeshStandardMaterial({ color: 0xf2f2f0, roughness: 0.9 });
     B(bx0, by0, bz0, bx1, RH + 0.01, bz1, plaster);
     const alu = new THREE.MeshStandardMaterial({ color: 0xe9e9e7, metalness: 0.4, roughness: 0.35 }), slot = new THREE.MeshStandardMaterial({ color: 0x2a2b2c, roughness: 0.8 });
-    const vy0 = by0 + 0.15, vy1 = by0 + 0.3;
+    const vy0 = by0 + (RH - by0 - 0.15) / 2, vy1 = vy0 + 0.15;                       // vents centred on the 36 cm face
     for (const xc of [-0.9, 1.3, 3.1]) {                                                               // V2, V3, V4 on the living-room face
       const vx0 = xc - 0.36, vx1 = xc + 0.36, f = bz0;
       B(vx0 - 0.012, vy0 - 0.012, f - 0.012, vx1 + 0.012, vy1 + 0.012, f, alu, { cast: false });
@@ -1231,6 +1231,10 @@ async function build() {
   Object.assign(sun.shadow.camera, { left: -14, right: 14, top: 14, bottom: -14, near: 0.5, far: 40 });
   sun.shadow.bias = -0.0003; sun.shadow.normalBias = 0.03;
   scene.add(sun, sun.target);
+  // sun-only shadow blocker just under the ceiling (layer 2: seen only by the sun's shadow camera, never drawn, ignored by the
+  // ceiling spots). It stops the thin saw-tooth light leak where walls meet the ceiling; window sunlight is unaffected (windows end at 2.22 m).
+  { const blk = new THREE.Mesh(new THREE.BoxGeometry(FX1 - FX0, 0.06, FZ1 - FZ0), M.wall); blk.position.set((FX0 + FX1) / 2, RH - 0.03, (FZ0 + FZ1) / 2);
+    blk.castShadow = true; blk.receiveShadow = false; blk.layers.set(2); blk.userData.keep = true; scene.add(blk); sun.shadow.camera.layers.enable(2); }
   scene.add(new THREE.HemisphereLight(0xffffff, 0xe6e2da, 0.35));
 
   /* ----- white cone pendant with a wooden neck above the island (switch with the ceiling lights) ----- */
