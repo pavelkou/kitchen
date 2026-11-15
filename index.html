@@ -157,21 +157,21 @@ const WALLS = [
   [357.72, 560.72, 369.24, 748.88, [[597, 643, 0, 2.0, 'steel']]],          // safe room door wall
   [147.96, 733.52, 357.72, 748.88],                                          // safe room bottom
   [164.28, 390.32, 363.0, 396.08],                                           // bedroom 2 | 3
-  [363.0, 229.04, 369.24, 560.72, [[232, 279, 0, 2.1, 'door'], [513.2, 560.0, 0, 2.1, 'door']]], // bedrooms | living (face flush with the safe-room wall)
+  [363.0, 229.04, 369.24, 560.72, [[232, 279, 0, 2.1, 'door+'], [513.2, 560.0, 0, 2.1, 'door+']]], // bedrooms | living (face flush with the safe-room wall)
   [428.28, 542.7, 510.84, 552.08],                                           // guest WC top (flush with the stair-core wall: one flat TV wall)
   [510.84, 542.7, 745.08, 556.5],                                            // stair-core wall (living room side)
   [510.84, 556.5, 530.0, 836.24],                                            // stair-core wall (bathroom side)
-  [428.28, 552.08, 434.04, 676.88, [[598.16, 632.72, 0, 2.1, 'door']]],     // guest WC door wall
+  [428.28, 552.08, 434.04, 676.88, [[598.16, 632.72, 0, 2.1, 'door-']]],    // guest WC door wall
   [434.04, 639.92, 510.84, 645.68],                                          // WC | laundry niche
-  [369.24, 676.88, 434.04, 682.16, [[375.96, 416.28, 0, 2.1, 'door']]],     // bathroom door wall
+  [369.24, 676.88, 434.04, 682.16, [[375.96, 416.28, 0, 2.1, 'door-']]],    // bathroom door wall
   [357.72, 748.88, 369.24, 836.24],                                          // bathroom west
   [369.24, 822.8, 510.84, 836.24],                                           // bathroom south
   [908.4, 85.04, 918.84, 479.12],                                            // bedroom 1 party wall
   [731.64, 85.04, 737.4, 406.64],                                            // long kitchen wall
   [680.76, 406.64, 737.4, 412.4],                                           // return at the end of the long wall (kitchen side)
-  [737.4, 406.64, 791.16, 412.4, [[742.0, 789.0, 0, 2.1, 'door']]],         // bedroom 1 door
+  [737.4, 406.64, 791.16, 412.4, [[742.0, 789.0, 0, 2.1, 'door+']]],        // bedroom 1 door
   [796.92, 323.12, 908.4, 328.88],                                           // en-suite top
-  [789.24, 323.12, 796.92, 466.16, [[332, 375, 0, 2.1, 'door']]],           // en-suite door wall
+  [789.24, 323.12, 796.92, 466.16, [[332, 375, 0, 2.1, 'door-']]],          // en-suite door wall
   [731.64, 466.16, 908.4, 479.12],                                           // en-suite / lobby wall
   [731.64, 479.12, 745.08, 542.7, [[485.84, 536.24, 0, 2.1, 'entry']]],     // entrance door
 ];
@@ -378,8 +378,11 @@ async function build() {
       const pm = kind === 'entry' ? doorWood : kind === 'steel' ? steelDoor : M.cab;
       R(a, a + fw, c0 - ex, c1 + ex, 0, top + 0.035, M.cab); R(b - fw, b, c0 - ex, c1 + ex, 0, top + 0.035, M.cab);
       R(a, b, c0 - ex, c1 + ex, top, top + 0.035, M.cab);
-      R(a + fw, b - fw, c - 0.022 * m, c + 0.022 * m, 0.008, top, pm);
-      R(b - fw - 0.16 * m, b - fw - 0.04 * m, c - 0.045 * m, c + 0.045 * m, 1.0, 1.022, M.steel);
+      // white interior doors: leaf flush with the wall surface on the living / hallway side ('door+' = higher-coordinate face,
+      // 'door-' = lower-coordinate face); entrance and safe-room doors stay centred in the wall
+      const t = 0.04 * m, pc = kind === 'door+' ? c1 - t / 2 : kind === 'door-' ? c0 + t / 2 : c;
+      R(a + fw, b - fw, pc - t / 2, pc + t / 2, 0.008, top, pm);
+      R(b - fw - 0.16 * m, b - fw - 0.04 * m, pc - 0.065 * m, pc + 0.065 * m, 1.0, 1.022, M.steel);
     }
   }
   function buildWall([x0, y0, x1, y1, ops = []]) {
