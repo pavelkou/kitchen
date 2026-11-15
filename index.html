@@ -1198,6 +1198,17 @@ async function build() {
     });
   })();
 
+  /* ----- hallway: plasterboard bulkhead hiding the A/C sleeves, 45 cm below the ceiling, with a linear supply vent facing the living room ----- */
+  { const bx0 = pX(542.7), bx1 = pX(676.88), bz0 = pZ(428.28) - 0.005, bz1 = pZ(369.24) + 0.005, by0 = RH - 0.45;
+    const plaster = new THREE.MeshStandardMaterial({ color: 0xf2f2f0, roughness: 0.9 });
+    B(bx0, by0, bz0, bx1, RH + 0.01, bz1, plaster);                                                   // the lowered box (front face flush with the TV wall)
+    const vz0 = (bz0 + bz1) / 2 - 0.36, vz1 = (bz0 + bz1) / 2 + 0.36, vy0 = by0 + 0.15, vy1 = by0 + 0.3;
+    const alu = new THREE.MeshStandardMaterial({ color: 0xe9e9e7, metalness: 0.4, roughness: 0.35 }), slot = new THREE.MeshStandardMaterial({ color: 0x2a2b2c, roughness: 0.8 });
+    B(bx0 - 0.012, vy0 - 0.012, vz0 - 0.012, bx0, vy1 + 0.012, vz1 + 0.012, alu, { cast: false });    // thin flange frame
+    B(bx0 - 0.0125, vy0, vz0, bx0 - 0.004, vy1, vz1, slot, { cast: false });                          // dark opening
+    for (let i = 0; i < 6; i++) { const y = vy0 + 0.012 + i * (vy1 - vy0 - 0.024) / 5;                  // horizontal louvres
+      B(bx0 - 0.016, y - 0.004, vz0 + 0.004, bx0 - 0.004, y + 0.004, vz1 - 0.004, alu, { cast: false }); }
+  }
   /* ----- lights ----- */
   const spots = [];
   for (const [x, z] of [[-2.9, 1.25], [-1.2, 1.25], [0.5, 1.25]]) {
@@ -1250,7 +1261,7 @@ function makeComposer() {
     composer.addPass(new RenderPass(scene, camera));
     const gtao = new GTAOPass(scene, camera, innerWidth, innerHeight);
     gtao.output = GTAOPass.OUTPUT.Default; gtao.blendIntensity = 0.9;
-    try { gtao.updateGtaoMaterial({ radius: 0.35, distanceExponent: 1.4, thickness: 1, scale: 1, samples: 10 }); gtao.updatePdMaterial({ samples: 8, radius: 6 }); } catch (e) {}
+    try { gtao.updateGtaoMaterial({ radius: 0.28, distanceExponent: 1.4, thickness: 1, scale: 1, samples: 16 }); gtao.updatePdMaterial({ samples: 16, radius: 8 }); /* full sampling: no banding in wall/ceiling corners */ } catch (e) {}
     composer.addPass(gtao);
     composer.addPass(new OutputPass());
     composer.setPixelRatio(renderer.getPixelRatio());
