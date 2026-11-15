@@ -698,15 +698,16 @@ async function build() {
     const SX = (pX(279) + pX(513.2)) / 2;     // centre between the two bedroom doors
     // sofa 260 × 100, back against the bedrooms wall, facing the kitchen (−z)
     { const L = 2.6, D = 1.0, z0 = SW - D;
-      add(RB(L, 0.22, D - 0.05, 0.03), fab2, SX, 0.17, z0 + D / 2);                          // base
+      // (no coplanar faces anywhere: every part is inset/offset a few mm so surfaces never z-fight)
+      add(RB(L - 0.02, 0.2, D - 0.05, 0.03), fab2, SX, 0.165, z0 + D / 2);                   // base (top at 0.265, inset from the arm ends)
       for (const s of [-1, 1]) add(RB(0.22, 0.62, D, 0.06), fab, SX + s * (L / 2 - 0.11), 0.31, z0 + D / 2); // arms
       add(RB(L - 0.02, 0.6, 0.24, 0.06), fab, SX, 0.58, SW - 0.13);                       // back frame
       for (let i = 0; i < 3; i++) { const w = (L - 0.44) / 3, x = SX - (L - 0.44) / 2 + w * (i + 0.5);
-        add(RB(w - 0.01, 0.16, D - 0.3, 0.05), fab, x, 0.36, z0 + (D - 0.3) / 2 + 0.03);       // seat cushions
-        add(RB(w - 0.02, 0.42, 0.18, 0.07), fab, x, 0.62, SW - 0.33); }                      // back cushions
+        add(RB(w - 0.02, 0.16, D - 0.32, 0.05), fab, x, 0.36, z0 + (D - 0.32) / 2 + 0.03);     // seat cushions (bottom 0.28, 1.5 cm clear of the base, 1 cm off the arms)
+        add(RB(w - 0.03, 0.42, 0.17, 0.07), fab, x, 0.64, SW - 0.345); }                     // back cushions (5 mm in front of the frame)
       const P = [[-0.95, 0], [-0.7, 1], [-0.42, 2], [-0.18, 3], [0.35, 3], [0.62, 2], [0.88, 4]];
       P.forEach(([dx, k], i) => { const m = add(RB(0.42, 0.42, 0.13, 0.06), pil[k], SX + dx, 0.66, SW - 0.45, 0); m.rotation.x = 0.25; m.rotation.z = (i % 2 ? 0.08 : -0.06); });
-      const th = add(RB(0.45, 0.02, 0.75, 0.01), throwM, SX + 0.15, 0.45, z0 + 0.42); th.rotation.y = 0.15;
+      const th = add(RB(0.45, 0.02, 0.62, 0.01), throwM, SX + 0.15, 0.452, z0 + 0.38); th.rotation.y = 0.15;
       add(RB(0.45, 0.02, 0.3, 0.01), throwM, SX + 0.2, 0.3, z0 - 0.0).rotation.x = 1.3;
       plant(SX + L / 2 + 0.35, 0, SW - 0.35, 1.7, potLight); }                               // floor plant beside the sofa
     // rug 300 × 200
