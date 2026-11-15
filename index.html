@@ -123,7 +123,7 @@ const nextFrame = () => new Promise(r => requestAnimationFrame(() => setTimeout(
 
 /* ---------------- renderer ---------------- */
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(devicePixelRatio, isMobile ? 1.6 : 2));
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5)); // MSAA makes 1.5× as sharp as 2× at ~half the pixels
 renderer.setSize(innerWidth, innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.NeutralToneMapping;
@@ -707,20 +707,15 @@ function makeComposer() {
     composer.addPass(new RenderPass(scene, camera));
     const gtao = new GTAOPass(scene, camera, innerWidth, innerHeight);
     gtao.output = GTAOPass.OUTPUT.Default; gtao.blendIntensity = 0.9;
-    try { gtao.updateGtaoMaterial({ radius: 0.35, distanceExponent: 1.4, thickness: 1, scale: 1 }); } catch (e) {}
+    try { gtao.updateGtaoMaterial({ radius: 0.35, distanceExponent: 1.4, thickness: 1, scale: 1, samples: 10 }); gtao.updatePdMaterial({ samples: 8, radius: 6 }); } catch (e) {}
     composer.addPass(gtao);
     composer.addPass(new OutputPass());
     composer.setPixelRatio(renderer.getPixelRatio());
     composer.setSize(innerWidth, innerHeight);
   } catch (e) { console.warn('AO disabled', e); composer = null; aoOn = false; $('cAO').checked = false; }
 }
-const FULL_PR = Math.min(devicePixelRatio, isMobile ? 1.6 : 2), MOVE_PR = Math.min(devicePixelRatio, isMobile ? 0.85 : 1);
-let curPR = FULL_PR, idle = 0;
-function setPR(p) { if (p === curPR) return; curPR = p; renderer.setPixelRatio(p); renderer.setSize(innerWidth, innerHeight); }
-function draw(fast) {
-  if (fast) { setPR(MOVE_PR); renderer.render(scene, camera); return; }
-  setPR(FULL_PR); if (aoOn && composer) composer.render(); else renderer.render(scene, camera);
-}
+// every frame is rendered at full quality (AO + MSAA); speed comes from merged geometry and a cheaper AO setup
+function draw() { if (aoOn && composer) composer.render(); else renderer.render(scene, camera); }
 
 /* ---------------- camera: stand in the aisle and look around ---------------- */
 const AISLE = { y: 1.6, z: 1.18 };
@@ -907,8 +902,7 @@ function tick() {
     if (Math.abs(d) > 1e-5) { cur[k] += d * 0.2; moving = true; } else cur[k] = tgt[k];
   }
   if (moving) { const f = $('fov'); if (Math.abs(f.value - cur.fov) > 0.5) f.value = Math.round(cur.fov); }
-  if (moving || auto) { idle = 0; apply(); draw(true); drawMap(); dirty = false; }
-  else if (dirty || ++idle === 6) { apply(); draw(false); drawMap(); dirty = false; }
+  if (moving || auto || dirty) { apply(); draw(); drawMap(); dirty = false; }
 }
 
 
