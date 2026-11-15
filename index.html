@@ -149,15 +149,15 @@ const PS = 56.693, PY0 = 85.04, PX0 = 731.64;
 const pX = y => -4 + (y - PY0) / PS, pZ = x => (PX0 - x) / PS;
 const WALLS = [
   [351.96, 68.7, 918.84, 85.04, [[385.56, 578.52, 0.299, 2.219, 'win'], [643.8, 683.16, 1.058, 2.219, null], [776.76, 867.48, 1.058, 2.219, 'win']]], // façade: dining, kitchen, bedroom 1 windows
-  [351.96, 85.04, 368.76, 229.04, [[98.0, 209.84, 0, 2.19, 'slide']]],        // balcony sliding door
-  [147.5, 212.72, 368.76, 229.04, [[249.72, 317.4, 1.058, 2.219, 'win']]],    // bedroom 2 ↔ balcony
+  [351.96, 85.04, 369.24, 229.04, [[98.0, 209.84, 0, 2.19, 'slide']]],        // balcony sliding door
+  [147.5, 212.72, 369.24, 229.04, [[249.72, 317.4, 1.058, 2.219, 'win']]],    // bedroom 2 ↔ balcony
   [147.5, 229.04, 164.28, 560.72, [[275.6, 343.76, 0.299, 2.219, 'win'], [457.04, 525.2, 0.299, 2.219, 'win']]], // bedrooms 2/3 façade
   [147.96, 560.72, 169.08, 748.88, [[607.76, 664.4, 1.07, 2.07, 'win']]],    // safe room façade
   [164.28, 560.72, 357.72, 572.24],                                          // safe room top
   [357.72, 560.72, 369.24, 748.88, [[597, 643, 0, 2.0, 'steel']]],          // safe room door wall
   [147.96, 733.52, 357.72, 748.88],                                          // safe room bottom
   [164.28, 390.32, 363.0, 396.08],                                           // bedroom 2 | 3
-  [363.0, 229.04, 368.76, 560.72, [[232, 279, 0, 2.1, 'door'], [513.2, 560.0, 0, 2.1, 'door']]], // bedrooms | living
+  [363.0, 229.04, 369.24, 560.72, [[232, 279, 0, 2.1, 'door'], [513.2, 560.0, 0, 2.1, 'door']]], // bedrooms | living (face flush with the safe-room wall)
   [428.28, 542.7, 510.84, 552.08],                                           // guest WC top (flush with the stair-core wall: one flat TV wall)
   [510.84, 542.7, 745.08, 556.5],                                            // stair-core wall (living room side)
   [510.84, 556.5, 530.0, 836.24],                                            // stair-core wall (bathroom side)
@@ -714,7 +714,7 @@ async function build() {
       }
     }
     // --- layout anchors (model metres) ---
-    const SW = pZ(368.76);                    // bedrooms wall face (living side), z = 6.40
+    const SW = pZ(369.24);                    // bedrooms wall face (living side), z = 6.40
     const TVW = pX(542.7);                    // stair-core wall face, x = 4.07
     const SX = (pX(279) + pX(513.2)) / 2 - 0.2; // between the bedroom doors, shifted 20 cm so ≥1 m stays clear between the sofa end and the TV console
     // sofa 260 × 100, back against the bedrooms wall, facing the kitchen (−z)
@@ -1164,7 +1164,7 @@ function drawMap() {
   const rect = (x0, z0, x1, z1, f) => { mg.fillStyle = f; mg.fillRect(X(x0), Z(z0), (x1 - x0) * s, (z1 - z0) * s); };
   rect(-3.988, 0, 1.2 + DX, 0.62, '#e9e6df'); rect(1.2 + DX, 0, 3.523 + DX, 0.7, '#bfbfbf');
   rect(-4, 1.75, -2.0, 2.65, '#e9e6df');
-  { const SW = pZ(368.76), SX = (pX(279) + pX(513.2)) / 2 - 0.2, TVW = pX(542.7);                      // living furniture
+  { const SW = pZ(369.24), SX = (pX(279) + pX(513.2)) / 2 - 0.2, TVW = pX(542.7);                      // living furniture
     rect(SX - 1.3, SW - 1.0, SX + 1.3, SW, '#cfc6b8'); rect(SX - 1.5, SW - 3.2, SX + 1.5, SW - 0.7, 'rgba(185,173,154,.6)');
     mg.fillStyle = '#2f2d2b'; mg.beginPath(); mg.arc(X(1.2), Z(SW - 1.95), 0.5 * s, 0, 6.283); mg.fill();
     rect(TVW - 0.45, pZ(428.28) - 3.23, TVW, pZ(428.28) - 0.3, '#b89470');
@@ -1240,7 +1240,7 @@ const STATIONS = [
   [0.61, 1.6, 1.35],                                    // fridge
   [3.5, 1.6, 0.75],                                     // main entrance
   [0.66, 1.12, 3.374],                                  // sitting in the swivel chair
-  [(pX(279) + pX(513.2)) / 2 - 0.2, 1.12, pZ(368.76) - 0.55], // sitting on the sofa
+  [(pX(279) + pX(513.2)) / 2 - 0.2, 1.12, pZ(369.24) - 0.55], // sitting on the sofa
   [-2.75 + 0.51, 1.15, pZ(482.04) + 0.3 + 0.51],        // dining chair nearest the balcony and the sofa
   [-2.28, 1.37, 2.95],                                  // island stool to the right of the schnauzer
 ];
