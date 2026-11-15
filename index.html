@@ -112,6 +112,7 @@ import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { StereoEffect } from 'three/addons/effects/StereoEffect.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 window.__ok = true;
 
 const $ = id => document.getElementById(id);
@@ -175,7 +176,7 @@ const WALLS = [
 ];
 const PARAPETS = [[147.48, 69.2, 351.96, 77.36], [147.48, 77.36, 155.64, 212.72], [233.4, 828.08, 357.72, 833.84], [233.4, 748.88, 238.68, 828.08]];
 const BALCONIES = [[147.48, 69.2, 351.96, 212.72], [233.4, 748.88, 357.72, 833.84]];
-const ROOM_LIGHTS = [[550, 420], [470, 160], [265, 310], [265, 475], [265, 650], [398, 620], [472, 595], [440, 755], [820, 200], [850, 400], [762, 440]];
+const ROOM_LIGHTS = [[550, 420], [265, 310], [265, 475], [265, 650], [440, 735], [830, 230]];
 
 /* ---------------- procedural textures ---------------- */
 function rng(s) { return function () { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
@@ -215,7 +216,7 @@ function makeMarble(seed) {
   for (let i = 0; i < 6; i++) trace(R() * W, R() * H, -0.7 + R() * 0.5 + (R() < 0.3 ? Math.PI : 0), 1800 + R() * 1800, 1.4 + R() * 1.8, R() < 0.45 ? gold : grey, 1, 0);
   for (let i = 0; i < 16; i++) trace(R() * W, R() * H, -0.9 + R() * 1.2, 300 + R() * 900, 0.5 + R() * 0.8, R() < 0.4 ? gold : grey, 0.6, 1);
   g.lineCap = 'round'; g.lineJoin = 'round';
-  const passes = [[7, 0.025, '196,176,142'], [2.6, 0.07, null], [1, 0.38, null]];
+  const passes = [[10, 0.028, '196,176,142'], [4, 0.06, null], [1.6, 0.17, null]];
   for (const v of veins) for (const [sc, al, hc] of passes) {
     const col = hc || v.col;
     for (let k = 0; k < v.pts.length - 1; k += 12) {
@@ -229,6 +230,9 @@ function makeMarble(seed) {
       });
     }
   }
+  // soften: down-sample 3× and back up (works on every browser, unlike ctx.filter)
+  { const [t, tg] = canvas(W / 3, H / 3); tg.imageSmoothingQuality = 'high'; tg.drawImage(c, 0, 0, W / 3, H / 3);
+    g.imageSmoothingQuality = 'high'; g.drawImage(t, 0, 0, W, H); }
   const id = g.getImageData(0, 0, W, H), d = id.data;
   for (let i = 0; i < d.length; i += 4) { const n = (R() - 0.5) * 3; d[i] += n; d[i + 1] += n; d[i + 2] += n; }
   g.putImageData(id, 0, 0);
@@ -283,7 +287,7 @@ function makeCooktop() {
 function makeSky() {
   const [c, g] = canvas(16, 256);
   const gr = g.createLinearGradient(0, 0, 0, 256);
-  gr.addColorStop(0, '#6fa6dd'); gr.addColorStop(0.65, '#bcd5ea'); gr.addColorStop(1, '#eef2f2');
+  gr.addColorStop(0, '#5d7699'); gr.addColorStop(0.25, '#768394'); gr.addColorStop(0.5, '#8a96a3'); gr.addColorStop(1, '#7c7f78');
   g.fillStyle = gr; g.fillRect(0, 0, 16, 256);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
 }
@@ -391,7 +395,15 @@ async function build() {
     seg(p, hi, 0, RH);
   }
   WALLS.forEach(buildWall);
-  PARAPETS.forEach(([x0, y0, x1, y1]) => PB(x0, y0, x1, y1, 0, 1.05, M.wall));
+  const railGlass = new THREE.MeshPhysicalMaterial({ color: 0xe4f0ee, roughness: 0.04, transparent: true, opacity: 0.18, depthWrite: false, clearcoat: 1 });
+  PARAPETS.forEach(([x0, y0, x1, y1], i) => {
+    if (i >= 2) { PB(x0, y0, x1, y1, 0, 1.05, M.wall); return; }
+    const alongX = (x1 - x0) >= (y1 - y0), cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, t = 0.006 * PS, r = 0.025 * PS;
+    const R = (a, b) => alongX ? [x0, cy - b, x1, cy + b] : [cx - b, y0, cx + b, y1];
+    PB(...R(0, 0.03 * PS), 0, 0.08, M.trim);                                   // base channel
+    PB(...R(0, t), 0.08, 1.0, railGlass, { cast: false, recv: false });       // glass plates
+    PB(...R(0, r), 1.0, 1.05, M.trim);                                        // handrail on top
+  });
   BALCONIES.forEach(([x0, y0, x1, y1]) => PB(x0, y0, x1, y1, 0, 0.006, outdoor));
   // floor (Lunaris Perla, grid kept from the kitchen) + ceiling over the whole apartment
   const FX0 = pX(68.7) - 0.05, FX1 = pX(836.24) + 0.05, FZ0 = pZ(918.84) - 0.05, FZ1 = pZ(147.48) + 0.05;
@@ -406,15 +418,17 @@ async function build() {
   B(RX0 - 0.02, WY0 - 0.02, WZ0 - 0.03, RX0 + 0.03, WY0, WZ1 + 0.03, M.pvc);
   // outside: sky dome + ground 6 m below (2nd floor)
   const sky = new THREE.Mesh(new THREE.SphereGeometry(50, 32, 16), new THREE.MeshBasicMaterial({ map: skyTex, side: THREE.BackSide }));
-  sky.material.color.setScalar(2.4); scene.add(sky);
+  sky.material.color.setScalar(1.25); scene.add(sky); sky.userData.keep = true;
   // the real view from the living-room window (photo), placed ~24 m out, sized to the iPhone's field of view
-  new THREE.TextureLoader().load('view.jpg', t => {
-    t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = maxAniso;
-    const w = 32.3, h = w * 1722 / 2400;
-    const v = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: t }));
-    v.material.color.setScalar(1.25); v.rotation.y = Math.PI / 2; v.position.set(-26.3, -3.1, pZ(482.04)); scene.add(v);
-    rebake();
-  });
+  // 360° panorama stitched from the two window photos (living-room view toward -x, balcony/sea view toward +z),
+  // mirrored + cross-faded to fill the directions that weren't photographed; texture rows are linear in elevation angle (±45°)
+  {
+    const R = 35, geo = new THREE.CylinderGeometry(R, R, 2 * R, 128, 24, true), pos = geo.attributes.position, uv = geo.attributes.uv;
+    for (let i = 0; i < pos.count; i++) uv.setY(i, 0.5 + Math.atan(pos.getY(i) / R) / (Math.PI / 2));
+    const mat = new THREE.MeshBasicMaterial({ side: THREE.BackSide, color: 0x000000 });
+    const pano = new THREE.Mesh(geo, mat); pano.position.set(2.5, 1.5, 3.5); pano.userData.keep = true; scene.add(pano);
+    new THREE.TextureLoader().load('pano.jpg', t => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = maxAniso; mat.map = t; mat.color.setScalar(1.25); mat.needsUpdate = true; rebake(); });
+  }
   // soft room lights (no shadows) for the rest of the apartment
   for (const [x, y] of ROOM_LIGHTS) {
     const l = new THREE.PointLight(0xf1f5ff, 3, 5.5, 2); l.position.set(pX(y), RH - 0.15, pZ(x)); scene.add(l);
@@ -700,7 +714,13 @@ function makeComposer() {
     composer.setSize(innerWidth, innerHeight);
   } catch (e) { console.warn('AO disabled', e); composer = null; aoOn = false; $('cAO').checked = false; }
 }
-function draw() { if (aoOn && composer) composer.render(); else renderer.render(scene, camera); }
+const FULL_PR = Math.min(devicePixelRatio, isMobile ? 1.6 : 2), MOVE_PR = Math.min(devicePixelRatio, isMobile ? 0.85 : 1);
+let curPR = FULL_PR, idle = 0;
+function setPR(p) { if (p === curPR) return; curPR = p; renderer.setPixelRatio(p); renderer.setSize(innerWidth, innerHeight); }
+function draw(fast) {
+  if (fast) { setPR(MOVE_PR); renderer.render(scene, camera); return; }
+  setPR(FULL_PR); if (aoOn && composer) composer.render(); else renderer.render(scene, camera);
+}
 
 /* ---------------- camera: stand in the aisle and look around ---------------- */
 const AISLE = { y: 1.6, z: 1.18 };
@@ -887,7 +907,34 @@ function tick() {
     if (Math.abs(d) > 1e-5) { cur[k] += d * 0.2; moving = true; } else cur[k] = tgt[k];
   }
   if (moving) { const f = $('fov'); if (Math.abs(f.value - cur.fov) > 0.5) f.value = Math.round(cur.fov); }
-  if (moving || dirty) { apply(); draw(); drawMap(); dirty = false; }
+  if (moving || auto) { idle = 0; apply(); draw(true); drawMap(); dirty = false; }
+  else if (dirty || ++idle === 6) { apply(); draw(false); drawMap(); dirty = false; }
+}
+
+
+/* ---------------- performance: merge all static meshes that share a material into one draw call ---------------- */
+function mergeStatic(S) {
+  scene.updateMatrixWorld(true);
+  const buckets = new Map(), victims = [];
+  scene.traverse(o => {
+    if (!o.isMesh || Array.isArray(o.material) || o.userData.keep) return;
+    for (let p = o.parent; p; p = p.parent) if (p === S.islCer || p === S.islCab) return;
+    let g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
+    for (const k of Object.keys(g.attributes)) if (!['position', 'normal', 'uv'].includes(k)) g.deleteAttribute(k);
+    if (!g.attributes.uv || !g.attributes.normal) return;
+    g.clearGroups(); g.applyMatrix4(o.matrixWorld);
+    const key = o.material.uuid + (o.castShadow ? 'c' : '') + (o.receiveShadow ? 'r' : '');
+    if (!buckets.has(key)) buckets.set(key, { mat: o.material, cast: o.castShadow, recv: o.receiveShadow, geos: [] });
+    buckets.get(key).geos.push(g); victims.push(o);
+  });
+  let n = 0;
+  for (const b of buckets.values()) {
+    const merged = mergeGeometries(b.geos, false); if (!merged) continue;
+    const m = new THREE.Mesh(merged, b.mat); m.castShadow = b.cast; m.receiveShadow = b.recv; scene.add(m); n++;
+    b.geos.forEach(g => g.dispose());
+  }
+  victims.forEach(o => { o.parent && o.parent.remove(o); o.geometry.dispose(); });
+  console.log(`merged ${victims.length} meshes into ${n}`);
 }
 
 /* ---------------- start ---------------- */
@@ -899,7 +946,7 @@ function tick() {
   $('cAO').addEventListener('change', e => { aoOn = e.target.checked; if (aoOn && !composer) makeComposer(); dirty = true; });
   $('islSide').addEventListener('change', e => { const cab = e.target.value === 'cab'; S.islCab.visible = cab; S.islCer.visible = !cab; rebake(); });
   $('loadtxt').textContent = 'Baking light & reflections…'; await nextFrame();
-  apply(); bake(); makeComposer();
+  mergeStatic(S); apply(); bake(); makeComposer();
   goView('counter');
   tick();
   setTimeout(() => $('load').classList.add('hide'), 250);
