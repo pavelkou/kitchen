@@ -574,7 +574,7 @@ async function build() {
   B(CX0, CT, 0, CX1, 1.95, 0.012, M.cerA, { uv: { ox: 1.1, oy: 0.0 } });
   // upper cabinets
   // top row: full depth, fronts flush with the cabinet above the fridge
-  B(CX0, 1.95, 0, CX1, 2.65, 0.58, carcassFront); grid(CX0, CX1, 1.953, 2.65, 0.581, 0.6, 4, 1);
+  B(CX0, 1.95, 0, CX1, 2.65, 0.58, carcassFront); grid(CX0, CX1 - 0.0015, 1.953, 2.65, 0.581, 0.6, 3, 1);   // 3 equal doors
   // lower wall-cabinet row: from 160 cm off the window wall to the oven column
   B(-2.4, 1.465, 0, CX1, 1.948, 0.33, carcassFront); grid(-2.4, CX1, 1.465, 1.947, 0.33, 0.35, 2, 1);
   // LED strip under the middle uppers
