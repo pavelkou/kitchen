@@ -557,8 +557,12 @@ async function build() {
   B(IX0, IT - ST, IZ0, IX1, IT, IZ1, M.cerB, { uv: iu });
   B(IX0, 0, IZ0, IX0 + ST, IT - ST, IZ1, M.cerB, { uv: iu });
   B(IX1 - ST, 0, IZ0, IX1, IT - ST, IZ1, M.cerB, { uv: iu });
-  B(IX0 + ST, 0, IZ1 - ST, IX1 - ST, IT - ST, IZ1, M.cerB, { uv: iu });
-  B(IX0 + ST, 0, IZ0 + 0.04, IX1 - ST, IT - ST, IZ1 - ST, carcassBack);
+  // stool side: no ceramic — the body is recessed 30 cm for knees/legs, and the recess is lined white like the cabinets
+  const KR = 0.30;
+  B(IX0 + ST, 0, IZ0 + 0.04, IX1 - ST, IT - ST, IZ1 - KR, carcassBack);                       // body (its back face is white)
+  B(IX0 + ST, IT - ST - 0.012, IZ1 - KR, IX1 - ST, IT - ST - 0.001, IZ1 - 0.002, M.cab);       // white underside of the overhang
+  B(IX0 + ST + 0.001, 0, IZ1 - KR, IX0 + ST + 0.012, IT - ST - 0.012, IZ1 - 0.002, M.cab);     // white lining on the inner side of each end panel
+  B(IX1 - ST - 0.012, 0, IZ1 - KR, IX1 - ST - 0.001, IT - ST - 0.012, IZ1 - 0.002, M.cab);
   const islCer = new THREE.Group(), islCab = new THREE.Group(); scene.add(islCer, islCab); islCer.visible = false;
   B(IX0 + ST, 0, IZ0, IX1 - ST, IT - ST, IZ0 + 0.04, M.cerB, { uv: iu, parent: islCer });
   B(IX0 + ST, 0, IZ0 + 0.07, IX1 - ST, 0.1, IZ0 + 0.04 + 0.001, M.dark, { parent: islCab });
