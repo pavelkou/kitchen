@@ -57,11 +57,11 @@
     <button data-view="s1">Sink</button>
     <button data-view="s2">Fridge</button>
     <button data-view="s3">Entrance</button>
-    <button data-view="s4">Swivel chair</button>
+    <button data-view="s4">Chair</button>
     <button data-view="s5">Sofa</button>
     <button data-view="s6">Dining</button>
     <button data-view="s7">Balcony</button>
-    <button data-view="s8">Island stool</button>
+    <button data-view="s8">Island</button>
   </div>
   <div class="row">
     <button id="bl" title="Turn left">◀</button>
@@ -70,11 +70,9 @@
     <button id="bfw" title="Walk forward">⇧ Walk</button>
     <button id="bbk" title="Walk back">⇩</button>
     <button id="br" title="Turn right">▶</button>
-    <button id="bauto" title="Auto-rotate">⟳ Auto</button>
     <button id="bvr" title="VR headset mode">🥽 VR</button>
     <button id="bgear" title="Settings">⚙</button>
   </div>
-  <div class="row"><label>Position</label><input type="range" id="walk" min="-3.3" max="1.2" step="0.01" value="-1.9"></div>
   <div id="settings">
     <div class="row"><label>Exposure</label><input type="range" id="exp" min="0.4" max="2.2" step="0.01" value="1"></div>
     <div class="row"><label>Lens (FOV)</label><input type="range" id="fov" min="30" max="95" step="1" value="70"></div>
@@ -1215,7 +1213,7 @@ const VIEWS = {
 function goView(name) {
   const v = name[0] === 's' && STATIONS[+name.slice(1)] ? stationView(+name.slice(1)) : VIEWS[name]; stopAuto();
   if (v.pos) { [tgt.x, tgt.y, tgt.z] = v.pos; }
-  else { tgt.x = v.x; tgt.y = AISLE.y; tgt.z = AISLE.z; $('walk').value = v.x; }
+  else { tgt.x = v.x; tgt.y = AISLE.y; tgt.z = AISLE.z; }
   tgt.yaw = nearAngle(v.yaw, tgt.yaw); tgt.pitch = v.pitch;
   document.querySelectorAll('.views button').forEach(b => b.classList.toggle('on', b.dataset.view === name));
 }
@@ -1247,7 +1245,7 @@ addEventListener('keydown', e => {
 });
 function step(d) { tgt.x -= Math.sin(tgt.yaw) * d; tgt.z -= Math.cos(tgt.yaw) * d; tgt.y = AISLE.y; }
 function strafe(d) { tgt.x += Math.cos(tgt.yaw) * d; tgt.z -= Math.sin(tgt.yaw) * d; tgt.y = AISLE.y; }
-function setWalk(x) { tgt.x = x; tgt.y = AISLE.y; tgt.z = AISLE.z; $('walk').value = x; }
+function setWalk(x) { tgt.x = x; tgt.y = AISLE.y; tgt.z = AISLE.z; }
 function hold(btn, fn) {
   let id = null;
   const start = e => { e.preventDefault(); stopAuto(); fn(); clearInterval(id); id = setInterval(fn, 16); };
@@ -1261,11 +1259,9 @@ hold($('bu'), () => tgt.pitch = clamp(tgt.pitch + 0.02, -1.35, 1.35));
 hold($('bd'), () => tgt.pitch = clamp(tgt.pitch - 0.02, -1.35, 1.35));
 hold($('bfw'), () => step(0.035));
 hold($('bbk'), () => step(-0.035));
-function stopAuto() { auto = false; $('bauto').classList.remove('on'); }
-$('bauto').addEventListener('click', () => { auto = !auto; $('bauto').classList.toggle('on', auto); });
+function stopAuto() { auto = false; }
 $('bgear').addEventListener('click', () => { $('settings').classList.toggle('open'); $('bgear').classList.toggle('on'); });
 document.querySelectorAll('.views button').forEach(b => b.addEventListener('click', () => goView(b.dataset.view)));
-$('walk').addEventListener('input', e => setWalk(parseFloat(e.target.value)));
 $('exp').addEventListener('input', e => { renderer.toneMappingExposure = parseFloat(e.target.value); dirty = true; });
 $('fov').addEventListener('input', e => { tgt.fov = parseFloat(e.target.value); });
 
