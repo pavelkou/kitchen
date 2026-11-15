@@ -391,13 +391,13 @@ async function build() {
     const seg = (p, q, h0, h1) => { if (q - p < 0.05) return; alongX ? PB(p, y0, q, y1, h0, h1, M.wall) : PB(x0, p, x1, q, h0, h1, M.wall); };
     let p = lo;
     for (const [a, b, sill, top, kind] of [...ops].sort((m, n) => m[0] - n[0])) {
-      seg(p, a, 0, RH);
+      seg(p, a, 0, RH + 0.1);
       if (sill > 0) seg(a, b, 0, sill);
-      if (top < RH) seg(a, b, top, RH);
+      if (top < RH) seg(a, b, top, RH + 0.1);
       if (kind) fillOpening(alongX, x0, y0, x1, y1, a, b, sill, top, kind);
       p = b;
     }
-    seg(p, hi, 0, RH);
+    seg(p, hi, 0, RH + 0.1);   // walls run 10 cm up into the slab: no seam at the wall/ceiling joint for light to leak through
   }
   WALLS.forEach(buildWall);
   const railGlass = new THREE.MeshPhysicalMaterial({ color: 0xe4f0ee, roughness: 0.04, transparent: true, opacity: 0.18, depthWrite: false, clearcoat: 1 });
@@ -496,7 +496,7 @@ async function build() {
   // floor (Lunaris Perla, grid kept from the kitchen) + ceiling over the whole apartment
   const FX0 = pX(68.7) - 0.05, FX1 = pX(836.24) + 0.05, FZ0 = pZ(918.84) - 0.05, FZ1 = pZ(147.48) + 0.05;
   B(FX0, -0.1, FZ0, FX1, 0, FZ1, M.floor, { uv: { sx: 2.4, sy: 2.4, ox: 4, oy: 0.55 } });
-  B(FX0, RH, FZ0, FX1, RH + 0.12, FZ1, M.ceiling);
+  B(FX0, RH, FZ0, FX1, RH + 0.3, FZ1, M.ceiling);   // 30 cm slab
   // kitchen window (plan: 70 cm wide, sill 105.8, top 221.9) — single pane, no mullion/transom
   const WZ0 = pZ(683.16), WZ1 = pZ(643.8), WY0 = 1.058, WY1 = 2.219;
   const fx0 = -4.13, fx1 = -4.06, fr = 0.055, zm = (WZ0 + WZ1) / 2;
@@ -1132,7 +1132,7 @@ async function build() {
     B(x - 0.075, RH - 0.014, z - 0.075, x + 0.075, RH - 0.012, z + 0.075, M.lamp, { cast: false });
     const s = new THREE.SpotLight(0xf1f5ff, 9, 0, 1.05, 0.95, 2);
     s.position.set(x, RH - 0.03, z); s.target.position.set(x, 0, z); scene.add(s, s.target);
-    s.castShadow = true; s.shadow.mapSize.set(1024, 1024); s.shadow.bias = -0.0004; s.shadow.normalBias = 0.02;
+    s.castShadow = true; s.shadow.mapSize.set(1024, 1024); s.shadow.bias = -0.0006; s.shadow.normalBias = 0.012;
     s.shadow.camera.near = 0.05; s.shadow.camera.far = 7; spots.push(s);
   }
   const sun = new THREE.DirectionalLight(0xfff7ec, 4.5);
