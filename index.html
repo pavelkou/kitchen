@@ -596,15 +596,17 @@ async function build() {
   // niche 92.3 cm so the run ends exactly at the end of the 567 cm wall
   B(2.0, 1.86, 0, 2.923, 1.95, 0.56, M.dark);
   B(2.0, 1.95, 0, 2.923, 2.65, TZ - 0.02, carcassFront); grid(2.0015, 2.9215, 1.953, 2.65, TZ - 0.019, TZ, 1, 1);   // one door above the fridge
-  B(2.017, 0.05, 0.02, 2.907, 1.85, 0.7, M.fridge);
-  B(2.08, 0.0, 0.6, 2.87, 0.05, 0.68, M.dark);
-  B(2.462, 0.06, 0.7, 2.468, 1.84, 0.702, M.dark);
+  // fridge flush with the cabinet fronts (z = 0.60) and tall enough to leave only a 1 cm gap under the top cabinet
+  const FT = 0.598, FH = 1.94;
+  B(2.017, 0.05, 0.02, 2.907, FH, FT, M.fridge);
+  B(2.08, 0.0, 0.5, 2.87, 0.05, 0.58, M.dark);                                       // recessed toe-kick grille
+  B(2.462, 0.06, FT, 2.468, FH - 0.01, FT + 0.002, M.dark);                          // door split
   for (const hx of [2.42, 2.49]) {
-    B(hx, 0.75, 0.735, hx + 0.02, 1.55, 0.755, M.steel);
-    B(hx + 0.005, 0.78, 0.7, hx + 0.015, 0.8, 0.736, M.steel); B(hx + 0.005, 1.5, 0.7, hx + 0.015, 1.52, 0.736, M.steel);
+    B(hx, 0.8, FT + 0.022, hx + 0.02, 1.7, FT + 0.04, M.steel);
+    B(hx + 0.005, 0.83, FT, hx + 0.015, 0.85, FT + 0.023, M.steel); B(hx + 0.005, 1.65, FT, hx + 0.015, 1.67, FT + 0.023, M.steel);
   }
-  B(2.12, 1.0, 0.7, 2.33, 1.42, 0.704, M.glassBlack);
-  B(2.17, 1.34, 0.704, 2.28, 1.385, 0.706, M.display, { cast: false });
+  B(2.12, 1.0, FT, 2.33, 1.42, FT + 0.004, M.glassBlack);
+  B(2.17, 1.34, FT + 0.004, 2.28, 1.385, FT + 0.006, M.display, { cast: false });
   // pantry, 60 cm
   B(2.923, 0, 0, 3.523, 0.1, TZ - 0.06, M.dark);
   B(2.923, 0.1, 0, 3.523, 2.65, TZ - 0.02, carcassFront);
@@ -1279,7 +1281,7 @@ function drawMap() {
   const prect = (x0, y0, x1, y1, f) => { mg.fillStyle = f; const a = X(pX(y0)), b = Z(pZ(x1)); mg.fillRect(a, b, X(pX(y1)) - a, Z(pZ(x0)) - b); };
   BALCONIES.forEach(r => prect(...r, 'rgba(160,160,150,.35)'));
   const rect = (x0, z0, x1, z1, f) => { mg.fillStyle = f; mg.fillRect(X(x0), Z(z0), (x1 - x0) * s, (z1 - z0) * s); };
-  rect(-3.988, 0, 1.2 + DX, 0.62, '#e9e6df'); rect(1.2 + DX, 0, 3.523 + DX, 0.7, '#bfbfbf');
+  rect(-3.988, 0, 1.2 + DX, 0.62, '#e9e6df'); rect(1.2 + DX, 0, 3.523 + DX, 0.6, '#bfbfbf');
   rect(-4, 1.75, -2.0, 2.65, '#e9e6df');
   { const SW = pZ(369.24), SX = (pX(279) + pX(513.2)) / 2 - 0.2, TVW = pX(542.7);                      // living furniture
     rect(SX - 1.3, SW - 1.0, SX + 1.3, SW, '#cfc6b8'); rect(SX - 1.5, SW - 3.2, SX + 1.5, SW - 0.7, 'rgba(185,173,154,.6)');
