@@ -353,7 +353,7 @@ async function build() {
   }
 
   /* ----- apartment shell from the plan ----- */
-  const RX0 = -4, RH = 2.8;
+  const RX0 = -4, RH = 2.65;
   const PB = (x0, y0, x1, y1, h0, h1, mat, o) => B(pX(y1 > y0 ? y0 : y1), h0, pZ(x1), pX(y1 > y0 ? y1 : y0), h1, pZ(x0), mat, o);
   const doorWood = new THREE.MeshStandardMaterial({ color: 0x5b4636, roughness: 0.55 });
   const steelDoor = new THREE.MeshStandardMaterial({ color: 0x9a9c9e, metalness: 0.4, roughness: 0.45 });
@@ -397,18 +397,24 @@ async function build() {
   const FX0 = pX(68.7) - 0.05, FX1 = pX(836.24) + 0.05, FZ0 = pZ(918.84) - 0.05, FZ1 = pZ(147.48) + 0.05;
   B(FX0, -0.1, FZ0, FX1, 0, FZ1, M.floor, { uv: { sx: 2.4, sy: 2.4, ox: 4, oy: 0.55 } });
   B(FX0, RH, FZ0, FX1, RH + 0.12, FZ1, M.ceiling);
-  // kitchen window (plan: 70 cm wide, sill 105.8, top 221.9) — custom frame
+  // kitchen window (plan: 70 cm wide, sill 105.8, top 221.9) — single pane, no mullion/transom
   const WZ0 = pZ(683.16), WZ1 = pZ(643.8), WY0 = 1.058, WY1 = 2.219;
   const fx0 = -4.13, fx1 = -4.06, fr = 0.055, zm = (WZ0 + WZ1) / 2;
   B(fx0, WY0, WZ0, fx1, WY0 + fr, WZ1, M.pvc); B(fx0, WY1 - fr, WZ0, fx1, WY1, WZ1, M.pvc);
   B(fx0, WY0, WZ0, fx1, WY1, WZ0 + fr, M.pvc); B(fx0, WY0, WZ1 - fr, fx1, WY1, WZ1, M.pvc);
-  B(fx0, WY0, zm - 0.025, fx1, WY1, zm + 0.025, M.pvc); B(fx0, 1.76, WZ0, fx1, 1.8, WZ1, M.pvc);
   B(-4.1, WY0, WZ0, -4.095, WY1, WZ1, M.glass, { cast: false, recv: false });
   B(RX0 - 0.02, WY0 - 0.02, WZ0 - 0.03, RX0 + 0.03, WY0, WZ1 + 0.03, M.pvc);
   // outside: sky dome + ground 6 m below (2nd floor)
   const sky = new THREE.Mesh(new THREE.SphereGeometry(50, 32, 16), new THREE.MeshBasicMaterial({ map: skyTex, side: THREE.BackSide }));
   sky.material.color.setScalar(2.4); scene.add(sky);
-  B(-50, -6.2, -50, 50, -6, 50, M.ground, { cast: false });
+  // the real view from the living-room window (photo), placed ~24 m out, sized to the iPhone's field of view
+  new THREE.TextureLoader().load('view.jpg', t => {
+    t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = maxAniso;
+    const w = 32.3, h = w * 1722 / 2400;
+    const v = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: t }));
+    v.material.color.setScalar(1.25); v.rotation.y = Math.PI / 2; v.position.set(-26.3, -3.1, pZ(482.04)); scene.add(v);
+    rebake();
+  });
   // soft room lights (no shadows) for the rest of the apartment
   for (const [x, y] of ROOM_LIGHTS) {
     const l = new THREE.PointLight(0xf1f5ff, 3, 5.5, 2); l.position.set(pX(y), RH - 0.15, pZ(x)); scene.add(l);
