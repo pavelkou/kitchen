@@ -1201,7 +1201,7 @@ async function build() {
 
   /* ----- A/C bulkhead: plasterboard box 45 cm below the ceiling, as deep as the hallway (~104 cm), running from the
      hallway along the bedrooms wall to the balcony door's edge; three linear supply vents face the living room ----- */
-  { const bx0 = pX(209.84), bx1 = pX(676.88), bz0 = pZ(428.28) - 0.005, bz1 = pZ(369.24) + 0.005, by0 = RH - 0.45;
+  { const bx0 = pX(232), bx1 = pX(676.88), bz0 = pZ(428.28) - 0.005, bz1 = pZ(369.24) + 0.005, by0 = RH - 0.36;   // ends flush with bedroom 2 door's edge; 36 cm drop
     const plaster = new THREE.MeshStandardMaterial({ color: 0xf2f2f0, roughness: 0.9 });
     B(bx0, by0, bz0, bx1, RH + 0.01, bz1, plaster);
     const alu = new THREE.MeshStandardMaterial({ color: 0xe9e9e7, metalness: 0.4, roughness: 0.35 }), slot = new THREE.MeshStandardMaterial({ color: 0x2a2b2c, roughness: 0.8 });
@@ -1233,13 +1233,13 @@ async function build() {
   scene.add(sun, sun.target);
   scene.add(new THREE.HemisphereLight(0xffffff, 0xe6e2da, 0.35));
 
-  /* ----- three white cone pendants with wooden necks above the island (switch with the ceiling lights) ----- */
+  /* ----- white cone pendant with a wooden neck above the island (switch with the ceiling lights) ----- */
   const pendants = [];
   { const white = new THREE.MeshStandardMaterial({ color: 0xf4f4f2, roughness: 0.5, side: THREE.DoubleSide });
     const inner = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6, side: THREE.BackSide });
     const oak = new THREE.MeshStandardMaterial({ map: makeWood('#c49a6c', 31), roughness: 0.55 });
     const cz = (1.75 + 2.65) / 2, bottom = 1.62;                                    // shade rim ~70 cm above the island top
-    for (const x of [-3.5, -3.0, -2.5]) {
+    for (const x of [-3.0]) {                                                   // single pendant over the middle of the island
       const m = (geo, mat, y, cast = true) => { const o = new THREE.Mesh(geo, mat); o.position.set(x, y, cz); o.castShadow = cast; scene.add(o); return o; };
       m(new THREE.CylinderGeometry(0.045, 0.045, 0.02, 32), white, RH - 0.01);                                  // ceiling canopy
       m(new THREE.CylinderGeometry(0.0035, 0.0035, RH - bottom - 0.25, 8), white, (RH + bottom + 0.25) / 2);      // cord
