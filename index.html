@@ -156,7 +156,7 @@ const WALLS = [
   [357.72, 560.72, 369.24, 748.88, [[597, 643, 0, 2.0, 'steel']]],          // safe room door wall
   [147.96, 733.52, 357.72, 748.88],                                          // safe room bottom
   [164.28, 390.32, 363.0, 396.08],                                           // bedroom 2 | 3
-  [363.0, 229.04, 369.24, 560.72, [[232, 279, 0, 2.1, 'door+'], [513.2, 560.0, 0, 2.1, 'door+']]], // bedrooms | living (face flush with the safe-room wall)
+  [363.0, 229.04, 369.24, 560.72, [[232, 279, 0, 2.1, 'door+'], [513.2, 560.0, 0, 2.1, 'door+', 'a']]], // bedrooms | living (face flush with the safe-room wall)
   [428.28, 542.7, 510.84, 552.08],                                           // guest WC top (flush with the stair-core wall: one flat TV wall)
   [510.84, 542.7, 745.08, 556.5],                                            // stair-core wall (living room side)
   [510.84, 556.5, 530.0, 836.24],                                            // stair-core wall (bathroom side)
@@ -362,7 +362,7 @@ async function build() {
   const doorWood = new THREE.MeshStandardMaterial({ color: 0x5b4636, roughness: 0.55 });
   const steelDoor = new THREE.MeshStandardMaterial({ color: 0x9a9c9e, metalness: 0.4, roughness: 0.45 });
   const outdoor = new THREE.MeshStandardMaterial({ color: 0xa9a7a2, roughness: 0.85 });
-  function fillOpening(alongX, x0, y0, x1, y1, a, b, sill, top, kind) {
+  function fillOpening(alongX, x0, y0, x1, y1, a, b, sill, top, kind, hs) {
     const c0 = alongX ? y0 : x0, c1 = alongX ? y1 : x1, c = (c0 + c1) / 2, m = PS;
     const R = (p0, p1, q0, q1, h0, h1, mat, o) => alongX ? PB(p0, q0, p1, q1, h0, h1, mat, o) : PB(q0, p0, q1, p1, h0, h1, mat, o);
     if (kind === 'win' || kind === 'slide') {
@@ -395,18 +395,19 @@ async function build() {
       // 'door-' = lower-coordinate face); entrance and safe-room doors stay centred in the wall
       const t = 0.04 * m, pc = kind === 'door+' ? c1 - t / 2 : kind === 'door-' ? c0 + t / 2 : c;
       R(a + fw, b - fw, pc - t / 2, pc + t / 2, 0.008, top, pm);
-      R(b - fw - 0.16 * m, b - fw - 0.04 * m, pc - 0.065 * m, pc + 0.065 * m, 1.0, 1.022, M.steel);
+      if (hs === 'a') R(a + fw + 0.04 * m, a + fw + 0.16 * m, pc - 0.065 * m, pc + 0.065 * m, 1.0, 1.022, M.steel);   // handle at the other edge
+      else R(b - fw - 0.16 * m, b - fw - 0.04 * m, pc - 0.065 * m, pc + 0.065 * m, 1.0, 1.022, M.steel);
     }
   }
   function buildWall([x0, y0, x1, y1, ops = []]) {
     const alongX = (x1 - x0) >= (y1 - y0), lo = alongX ? x0 : y0, hi = alongX ? x1 : y1;
     const seg = (p, q, h0, h1) => { if (q - p < 0.05) return; alongX ? PB(p, y0, q, y1, h0, h1, M.wall) : PB(x0, p, x1, q, h0, h1, M.wall); };
     let p = lo;
-    for (const [a, b, sill, top, kind] of [...ops].sort((m, n) => m[0] - n[0])) {
+    for (const [a, b, sill, top, kind, hs] of [...ops].sort((m, n) => m[0] - n[0])) {
       seg(p, a, 0, RH + 0.1);
       if (sill > 0) seg(a, b, 0, sill);
       if (top < RH) seg(a, b, top, RH + 0.1);
-      if (kind) fillOpening(alongX, x0, y0, x1, y1, a, b, sill, top, kind);
+      if (kind) fillOpening(alongX, x0, y0, x1, y1, a, b, sill, top, kind, hs);
       p = b;
     }
     seg(p, hi, 0, RH + 0.1);   // walls run 10 cm up into the slab: no seam at the wall/ceiling joint for light to leak through
@@ -1198,16 +1199,20 @@ async function build() {
     });
   })();
 
-  /* ----- hallway: plasterboard bulkhead hiding the A/C sleeves, 45 cm below the ceiling, with a linear supply vent facing the living room ----- */
-  { const bx0 = pX(542.7), bx1 = pX(676.88), bz0 = pZ(428.28) - 0.005, bz1 = pZ(369.24) + 0.005, by0 = RH - 0.45;
+  /* ----- A/C bulkhead: plasterboard box 45 cm below the ceiling, as deep as the hallway (~104 cm), running from the
+     hallway along the bedrooms wall to the balcony door's edge; three linear supply vents face the living room ----- */
+  { const bx0 = pX(209.84), bx1 = pX(676.88), bz0 = pZ(428.28) - 0.005, bz1 = pZ(369.24) + 0.005, by0 = RH - 0.45;
     const plaster = new THREE.MeshStandardMaterial({ color: 0xf2f2f0, roughness: 0.9 });
-    B(bx0, by0, bz0, bx1, RH + 0.01, bz1, plaster);                                                   // the lowered box (front face flush with the TV wall)
-    const vz0 = (bz0 + bz1) / 2 - 0.36, vz1 = (bz0 + bz1) / 2 + 0.36, vy0 = by0 + 0.15, vy1 = by0 + 0.3;
+    B(bx0, by0, bz0, bx1, RH + 0.01, bz1, plaster);
     const alu = new THREE.MeshStandardMaterial({ color: 0xe9e9e7, metalness: 0.4, roughness: 0.35 }), slot = new THREE.MeshStandardMaterial({ color: 0x2a2b2c, roughness: 0.8 });
-    B(bx0 - 0.012, vy0 - 0.012, vz0 - 0.012, bx0, vy1 + 0.012, vz1 + 0.012, alu, { cast: false });    // thin flange frame
-    B(bx0 - 0.0125, vy0, vz0, bx0 - 0.004, vy1, vz1, slot, { cast: false });                          // dark opening
-    for (let i = 0; i < 6; i++) { const y = vy0 + 0.012 + i * (vy1 - vy0 - 0.024) / 5;                  // horizontal louvres
-      B(bx0 - 0.016, y - 0.004, vz0 + 0.004, bx0 - 0.004, y + 0.004, vz1 - 0.004, alu, { cast: false }); }
+    const vy0 = by0 + 0.15, vy1 = by0 + 0.3;
+    for (const xc of [-0.9, 1.3, 3.1]) {                                                               // V2, V3, V4 on the living-room face
+      const vx0 = xc - 0.36, vx1 = xc + 0.36, f = bz0;
+      B(vx0 - 0.012, vy0 - 0.012, f - 0.012, vx1 + 0.012, vy1 + 0.012, f, alu, { cast: false });
+      B(vx0, vy0, f - 0.0125, vx1, vy1, f - 0.004, slot, { cast: false });
+      for (let i = 0; i < 6; i++) { const y = vy0 + 0.012 + i * (vy1 - vy0 - 0.024) / 5;
+        B(vx0 + 0.004, y - 0.004, f - 0.016, vx1 - 0.004, y + 0.004, f - 0.004, alu, { cast: false }); }
+    }
   }
   /* ----- lights ----- */
   const spots = [];
