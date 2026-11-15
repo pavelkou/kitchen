@@ -374,6 +374,20 @@ async function build() {
       R(a, b, c - 0.004 * m, c + 0.004 * m, sill, top, M.glass, { cast: false, recv: false });
     } else {
       const fw = 0.035 * m, ex = 0.012 * m;
+      if (kind === 'entry') {                      // main entrance: light-grey security door, wide casing, chrome lever + lock + peephole
+        const grey = new THREE.MeshStandardMaterial({ color: 0xd9d9d6, roughness: 0.45 }), chrome = new THREE.MeshStandardMaterial({ color: 0xe6e6e6, metalness: 1, roughness: 0.12 });
+        const cw = 0.08 * m, pr = 0.015 * m, face = c0, lt = 0.06 * m;                  // living-room face is the low-x side of this wall
+        R(a, a + cw, face - pr, c1, 0, top + 0.08, grey); R(b - cw, b, face - pr, c1, 0, top + 0.08, grey);   // jamb casings
+        R(a, b, face - pr, c1, top, top + 0.08, grey);                                                         // head casing
+        R(a + cw, b - cw, face, face + lt, 0.008, top, grey);                                                  // door leaf, flush with the wall
+        const hp = a + cw + 0.075 * m, out = face - 0.012 * m;
+        const rose = R(hp - 0.03 * m, hp + 0.03 * m, out - 0.008 * m, face, 0.97, 1.03, chrome);               // round-ish rose
+        R(hp - 0.01 * m, hp + 0.13 * m, out - 0.05 * m, out - 0.02 * m, 0.99, 1.012, chrome);                   // lever (points toward the middle)
+        R(hp - 0.008 * m, hp + 0.008 * m, out - 0.05 * m, out, 0.99, 1.012, chrome);
+        R(hp - 0.025 * m, hp + 0.025 * m, out - 0.008 * m, face, 0.855, 0.905, chrome);                         // lock cylinder escutcheon
+        const pc = (a + b) / 2; R(pc - 0.008 * m, pc + 0.008 * m, face - 0.006 * m, face, 1.55, 1.566, chrome); // peephole
+        return;
+      }
       const pm = kind === 'entry' ? doorWood : kind === 'steel' ? steelDoor : M.cab;
       R(a, a + fw, c0 - ex, c1 + ex, 0, top + 0.035, M.cab); R(b - fw, b, c0 - ex, c1 + ex, 0, top + 0.035, M.cab);
       R(a, b, c0 - ex, c1 + ex, top, top + 0.035, M.cab);
