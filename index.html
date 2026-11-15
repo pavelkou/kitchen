@@ -658,6 +658,26 @@ async function build() {
   const stoolFab = (() => { const [c, g] = canvas(256, 256); const R = rng(93); g.fillStyle = '#dcd8d0'; g.fillRect(0, 0, 256, 256);
     for (let i = 0; i < 4000; i++) { const v = 150 + R() * 100; g.fillStyle = `rgba(${v},${v - 3},${v - 10},0.6)`; g.beginPath(); g.arc(R() * 256, R() * 256, 0.8 + R() * 1.4, 0, 6.283); g.fill(); }
     const t = toTex(c); t.repeat.set(2, 2); return new THREE.MeshStandardMaterial({ map: t, roughness: 1 }); })();
+  // soft upholstered block: superellipsoid (a,b,c half sizes along x,y,z; e1 vertical, e2 plan roundness), optionally flared and bent into an arc around −z
+  function softBlock(a, b, c, e1, e2, o = {}) {
+    const P = (v, e) => Math.sign(v) * Math.pow(Math.abs(v), e), NW = 96, NH = 40, pos = [], uv = [], idx = [];
+    const put = (eta, om) => {
+      const ce = Math.cos(eta), se = Math.sin(eta), yn = P(se, e1);
+      let x = a * P(ce, e1) * P(Math.cos(om), e2), z = c * P(ce, e1) * P(Math.sin(om), e2);
+      const y = b * yn;
+      if (o.flare) x *= 1 + o.flare * yn;
+      if (o.topFull) z *= 1 + o.topFull * yn;
+      if (o.bendR) { const R = o.bendR, th = x / R, r = R + z; x = r * Math.sin(th); z = -R + r * Math.cos(th); }
+      pos.push(x, y, z); uv.push(x / 0.45 + 0.5, (y + z) / 0.45 + 0.5);
+    };
+    put(-Math.PI / 2, 0);
+    for (let j = 1; j < NH; j++) for (let i = 0; i < NW; i++) put(-Math.PI / 2 + j / NH * Math.PI, -Math.PI + i / NW * 2 * Math.PI);
+    put(Math.PI / 2, 0);
+    const top = 1 + (NH - 1) * NW, ring = (j, i) => 1 + (j - 1) * NW + (i % NW);
+    for (let i = 0; i < NW; i++) { idx.push(0, ring(1, i), ring(1, i + 1)); idx.push(top, ring(NH - 1, i + 1), ring(NH - 1, i)); }
+    for (let j = 1; j < NH - 1; j++) for (let i = 0; i < NW; i++) { const p = ring(j, i), q = ring(j, i + 1), r = ring(j + 1, i), t = ring(j + 1, i + 1); idx.push(p, r, q, q, r, t); }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals(); return g;
+  }
   function stool(x) {
     const g = new THREE.Group(); g.position.set(x, 0, 2.95); scene.add(g);       // local −z faces the island
     const add = (geo, mat, px, py, pz, rx = 0, rz = 0) => { const m = new THREE.Mesh(geo, mat); m.position.set(px, py, pz); m.rotation.set(rx, 0, rz); m.castShadow = m.receiveShadow = true; g.add(m); return m; };
@@ -665,7 +685,7 @@ async function build() {
     // legs (slight splay), back legs run up to carry the back rail
     for (const sx of [-1, 1]) {
       add(new THREE.CylinderGeometry(0.017, 0.013, 0.6, 20), stoolOak, sx * (hx + 0.008), 0.3, fz - 0.008, -0.03, sx * 0.03);
-      add(new THREE.CylinderGeometry(0.017, 0.013, 0.95, 20), stoolOak, sx * (hx + 0.006), 0.475, bz + 0.012, 0.035, sx * 0.02);
+      add(new THREE.CylinderGeometry(0.017, 0.013, 0.9, 20), stoolOak, sx * (hx + 0.006), 0.45, bz + 0.012, 0.035, sx * 0.02);
     }
     // seat apron + stretchers (H footrest)
     add(new THREE.BoxGeometry(2 * hx, 0.045, 0.022), stoolOak, 0, 0.585, fz + 0.005); add(new THREE.BoxGeometry(2 * hx, 0.045, 0.022), stoolOak, 0, 0.585, bz - 0.005);
@@ -673,15 +693,12 @@ async function build() {
     for (const sx of [-1, 1]) add(new THREE.CylinderGeometry(0.011, 0.011, bz - fz, 12), stoolOak, sx * (hx + 0.004), 0.24, 0, Math.PI / 2);
     add(new THREE.CylinderGeometry(0.011, 0.011, 2 * hx, 12), stoolOak, 0, 0.24, 0, 0, Math.PI / 2);
     add(new THREE.CylinderGeometry(0.011, 0.011, 2 * hx, 12), stoolOak, 0, 0.3, fz - 0.006, 0, Math.PI / 2);
-    // upholstered seat: soft rounded cushion, top at 0.672
-    const seat = add(new RoundedBoxGeometry(0.46, 0.06, 0.42, 6, 0.028), stoolFab, 0, 0.642, -0.005); seat.scale.set(1, 1, 1);
-    // curved back cushion: rounded slab bent so its ends wrap forward around the sitter
-    const bg = new RoundedBoxGeometry(0.46, 0.17, 0.05, 8, 0.022), bp = bg.attributes.position;
-    for (let i = 0; i < bp.count; i++) { const vx = bp.getX(i); bp.setZ(i, bp.getZ(i) - 1.1 * vx * vx); }
-    bg.computeVertexNormals();
-    add(bg, stoolFab, 0, 0.9, bz - 0.03, 0.12);                                   // leans back slightly
-    // oak rail behind the back cushion, between the back legs
-    add(new THREE.CylinderGeometry(0.019, 0.019, 2 * hx + 0.05, 16), stoolOak, 0, 0.9, bz + 0.012, 0, Math.PI / 2);
+    // upholstered seat: pillowy squircle cushion, top at 0.672, sits in front of the back posts
+    add(softBlock(0.235, 0.034, 0.205, 0.42, 0.45), stoolFab, 0, 0.638, -0.03);
+    // back: thick curved shell that wraps forward around the sitter, flared and fuller at the top
+    add(softBlock(0.25, 0.1, 0.026, 0.38, 0.3, { bendR: 0.25, flare: 0.1, topFull: 0.35 }), stoolFab, 0, 0.885, bz - 0.032, 0.12);
+    // short oak rail with rounded ends behind the back, between the back posts
+    add(new THREE.CapsuleGeometry(0.019, 2 * hx + 0.03, 8, 16), stoolOak, 0, 0.885, bz + 0.012, 0, Math.PI / 2);
   }
   for (const x of [-3.24, -2.76, -2.28]) stool(x);
 
