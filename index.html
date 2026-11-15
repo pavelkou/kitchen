@@ -2,7 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kitchen">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Kitchen 3D — Ceramic Preview</title>
 <style>
   html,body{margin:0;height:100%;overflow:hidden;background:#1b1b1d;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#fff}
@@ -12,9 +18,9 @@
   .spin{width:34px;height:34px;border-radius:50%;border:3px solid #ffffff33;border-top-color:#fff;animation:sp 1s linear infinite}
   @keyframes sp{to{transform:rotate(360deg)}}
   #loadtxt{font-size:14px;opacity:.85;max-width:80vw;text-align:center}
-  #hud{position:fixed;top:10px;left:12px;font-size:13px;padding:7px 11px;border-radius:10px;background:rgba(20,20,22,.45);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+  #hud{position:fixed;top:calc(10px + env(safe-area-inset-top));left:calc(12px + env(safe-area-inset-left));font-size:13px;padding:7px 11px;border-radius:10px;background:rgba(20,20,22,.45);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
   #hud span{opacity:.7;margin-left:6px}
-  #map{position:fixed;top:10px;right:10px;width:176px;height:136px;border-radius:10px;background:rgba(20,20,22,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+  #map{position:fixed;top:calc(10px + env(safe-area-inset-top));right:calc(10px + env(safe-area-inset-right));width:176px;height:136px;border-radius:10px;background:rgba(20,20,22,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
   @media (max-width:560px){#hint{display:none}#map{width:132px;height:102px}}
   #panel{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(10px + env(safe-area-inset-bottom));width:min(560px,calc(100vw - 16px));box-sizing:border-box;padding:8px;border-radius:16px;background:rgba(20,20,22,.55);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);display:flex;flex-direction:column;gap:7px}
   .row{display:flex;gap:6px;align-items:center;justify-content:center;flex-wrap:wrap}
@@ -735,6 +741,9 @@ async function enterVR() {
   try { if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') perm = DeviceOrientationEvent.requestPermission().catch(() => {}); } catch (e) {}
   try { const fs = document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen; if (fs) Promise.resolve(fs.call(document.documentElement)).catch(() => {}); } catch (e) {}
   vr = true; gyroOK = false; calib = null; document.body.classList.add('vr');
+  const standalone = navigator.standalone || matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches;
+  const canFS = !!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen) && !/iPhone/.test(navigator.userAgent);
+  if (!standalone && !canFS) setTimeout(() => toast('iPhone Safari keeps its toolbars on web pages. For true full screen: exit VR, tap Share → Add to Home Screen, then open “Kitchen” from your home screen.', 7000), 1700);
   addEventListener('deviceorientation', onOri);
   savedFov = tgt.fov; tgt.fov = 88; cur.fov = 88; stopAuto();
   stereo.setSize(innerWidth, innerHeight); showExit();
