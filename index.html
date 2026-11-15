@@ -53,14 +53,15 @@
 <canvas id="map" width="300" height="300" title="Floor plan"></canvas>
 <div id="panel">
   <div class="row views">
-    <button data-view="counter">Counter</button>
-    <button data-view="cooktop">Cooktop</button>
-    <button data-view="island">Island</button>
-    <button data-view="window">Window</button>
-    <button data-view="espresso">Espresso</button>
-    <button data-view="living">Living</button>
-    <button data-view="bedroom1">Bedroom 1</button>
-    <button data-view="overview">Overview</button>
+    <button data-view="s0">Espresso</button>
+    <button data-view="s1">Sink</button>
+    <button data-view="s2">Fridge</button>
+    <button data-view="s3">Entrance</button>
+    <button data-view="s4">Swivel chair</button>
+    <button data-view="s5">Sofa</button>
+    <button data-view="s6">Dining</button>
+    <button data-view="s7">Balcony</button>
+    <button data-view="s8">Island stool</button>
   </div>
   <div class="row">
     <button id="bl" title="Turn left">◀</button>
@@ -1099,7 +1100,7 @@ const VIEWS = {
   bedroom1: { pos: [1.15, 1.6, -0.55], ...lookFrom([1.15, 1.6, -0.55], [-3.0, 1.2, -2.0]) },
 };
 function goView(name) {
-  const v = VIEWS[name]; stopAuto();
+  const v = name[0] === 's' && STATIONS[+name.slice(1)] ? stationView(+name.slice(1)) : VIEWS[name]; stopAuto();
   if (v.pos) { [tgt.x, tgt.y, tgt.z] = v.pos; }
   else { tgt.x = v.x; tgt.y = AISLE.y; tgt.z = AISLE.z; $('walk').value = v.x; }
   tgt.yaw = nearAngle(v.yaw, tgt.yaw); tgt.pitch = v.pitch;
@@ -1252,6 +1253,19 @@ const STATIONS = [
   [pX(77.36) + 0.42, 1.15, pZ(155.64) - 1.75],          // balcony chair next to the grill master
   [-2.28, 1.37, 2.95],                                  // island stool to the right of the schnauzer
 ];
+// what each station looks at when chosen from the buttons (in VR your head decides)
+const STATION_LOOK = [
+  [-3.785, 1.1, 2.1],       // the Lelit
+  [-1.6, 0.9, 0.3],         // into the sink
+  [0.61, 1.2, 0.35],        // fridge doors
+  [-1.0, 1.2, 3.0],         // across the living room to the kitchen
+  [4.04, 1.42, 3.59],       // the TV
+  [-1.0, 1.2, 1.0],         // toward the kitchen
+  [-2.8, 1.2, 9.2],         // out to the balcony and the grill
+  [-2.8, 1.25, 9.2],        // the grill master
+  [-1.5, 1.1, 0.3],         // the kitchen counter
+];
+function stationView(i) { const p = STATIONS[i]; return { pos: p, ...lookFrom(p, STATION_LOOK[i]) }; }
 let tour = null;
 function nextStation() { tour.i = (tour.i + 1) % STATIONS.length; tour.fly = { t0: performance.now(), from: [cur.x, cur.y, cur.z], to: STATIONS[tour.i] }; }
 function tourTick(now) {
