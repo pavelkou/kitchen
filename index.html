@@ -1199,6 +1199,7 @@ async function build() {
     });
   })();
 
+  const bulkSpots = [];
   /* ----- A/C bulkhead: plasterboard box 45 cm below the ceiling, as deep as the hallway (~104 cm), running from the
      hallway along the bedrooms wall to the balcony door's edge; three linear supply vents face the living room ----- */
   { const bx0 = pX(232), bx1 = pX(676.88), bz0 = pZ(428.28) - 0.005, bz1 = pZ(369.24) + 0.005, by0 = RH - 0.36;   // ends flush with bedroom 2 door's edge; 36 cm drop
@@ -1206,13 +1207,19 @@ async function build() {
     B(bx0, by0, bz0, bx1, RH + 0.01, bz1, plaster);
     const alu = new THREE.MeshStandardMaterial({ color: 0xe9e9e7, metalness: 0.4, roughness: 0.35 }), slot = new THREE.MeshStandardMaterial({ color: 0x2a2b2c, roughness: 0.8 });
     const vy0 = by0 + (RH - by0 - 0.15) / 2, vy1 = vy0 + 0.15;                       // vents centred on the 36 cm face
-    for (const xc of [-0.9, 1.3, 3.1]) {                                                               // V2, V3, V4 on the living-room face
+    for (const xc of [-0.9, 1.1, 3.1]) {                                                               // V2, V3 (exactly midway), V4 on the living-room face
       const vx0 = xc - 0.36, vx1 = xc + 0.36, f = bz0;
       B(vx0 - 0.012, vy0 - 0.012, f - 0.012, vx1 + 0.012, vy1 + 0.012, f, alu, { cast: false });
       B(vx0, vy0, f - 0.0125, vx1, vy1, f - 0.004, slot, { cast: false });
       for (let i = 0; i < 6; i++) { const y = vy0 + 0.012 + i * (vy1 - vy0 - 0.024) / 5;
         B(vx0 + 0.004, y - 0.004, f - 0.016, vx1 - 0.004, y + 0.004, f - 0.004, alu, { cast: false }); }
     }
+    // three round decorative downlights in the underside, lined up with the vents, shining down
+    for (const xc of [-0.9, 1.1, 3.1]) { const zc = (bz0 + bz1) / 2;
+      const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.008, 40), alu); ring.position.set(xc, by0 - 0.004, zc); scene.add(ring);
+      const lens = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.038, 0.004, 32), M.lamp); lens.position.set(xc, by0 - 0.009, zc); scene.add(lens);
+      const l = new THREE.SpotLight(0xf1f5ff, 6, 0, 0.6, 0.7, 2); l.position.set(xc, by0 - 0.02, zc); l.target.position.set(xc, 0, zc);
+      scene.add(l, l.target); bulkSpots.push(l); }
   }
   /* ----- lights ----- */
   const spots = [];
@@ -1233,8 +1240,9 @@ async function build() {
   scene.add(sun, sun.target);
   // sun-only shadow blocker just under the ceiling (layer 2: seen only by the sun's shadow camera, never drawn, ignored by the
   // ceiling spots). It stops the thin saw-tooth light leak where walls meet the ceiling; window sunlight is unaffected (windows end at 2.22 m).
-  { const blk = new THREE.Mesh(new THREE.BoxGeometry(FX1 - FX0, 0.06, FZ1 - FZ0), M.wall); blk.position.set((FX0 + FX1) / 2, RH - 0.03, (FZ0 + FZ1) / 2);
-    blk.castShadow = true; blk.receiveShadow = false; blk.layers.set(2); blk.userData.keep = true; scene.add(blk); sun.shadow.camera.layers.enable(2); }
+  { const blk = new THREE.Mesh(new THREE.BoxGeometry(FX1 - FX0, 0.06, FZ1 - FZ0), new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false }));
+    blk.position.set((FX0 + FX1) / 2, RH - 0.03, (FZ0 + FZ1) / 2); blk.castShadow = true; blk.receiveShadow = false; blk.userData.keep = true;
+    blk.visible = false; scene.add(blk); sunBlocker = blk; }     // only switched on while shadows are baked (ceiling spots sit inside it but clip it with their near plane)
   scene.add(new THREE.HemisphereLight(0xffffff, 0xe6e2da, 0.35));
 
   /* ----- white cone pendant with a wooden neck above the island (switch with the ceiling lights) ----- */
@@ -1255,7 +1263,7 @@ async function build() {
       scene.add(l, l.target); pendants.push(l);
     }
   }
-  return { M, spots, pendants, led, sun, islCer, islCab };
+  return { M, spots, pendants, bulkSpots, led, sun, islCer, islCab };
 }
 
 /* ---------------- light probe (bounced light + real reflections) ---------------- */
@@ -1265,7 +1273,9 @@ const cubeRT = new THREE.WebGLCubeRenderTarget(256, { type: THREE.HalfFloatType 
 const cubeCam = new THREE.CubeCamera(0.05, 120, cubeRT);
 cubeCam.position.set(-0.9, 1.35, 1.6); scene.add(cubeCam);
 let probe = null;
+let sunBlocker = null;
 function bake() {
+  if (sunBlocker) sunBlocker.visible = true;
   renderer.shadowMap.needsUpdate = true;
   scene.environment = roomEnv; scene.environmentIntensity = 0.25;
   for (let i = 0; i < 2; i++) {
@@ -1274,7 +1284,7 @@ function bake() {
     if (probe) probe.dispose(); probe = rt;
     scene.environment = rt.texture; scene.environmentIntensity = 0.85;
   }
-  renderer.shadowMap.needsUpdate = true;
+  if (sunBlocker) sunBlocker.visible = false;   // shadow maps were rendered on the first cube face (with the blocker) and stay as baked
   dirty = true;
 }
 let bakeT = null; const rebake = () => { clearTimeout(bakeT); bakeT = setTimeout(bake, 30); };
@@ -1560,7 +1570,7 @@ function mergeStatic(S) {
 /* ---------------- start ---------------- */
 (async () => {
   const S = await build();
-  $('cSpots').addEventListener('change', e => { const on = e.target.checked; S.spots.forEach(s => s.intensity = on ? 9 : 0); S.pendants.forEach(p => p.intensity = on ? 3 : 0); S.M.lamp.emissiveIntensity = on ? 4.5 : 0; rebake(); });
+  $('cSpots').addEventListener('change', e => { const on = e.target.checked; S.spots.forEach(s => s.intensity = on ? 9 : 0); S.pendants.forEach(p => p.intensity = on ? 3 : 0); S.bulkSpots.forEach(p => p.intensity = on ? 6 : 0); S.M.lamp.emissiveIntensity = on ? 4.5 : 0; rebake(); });
   $('cLed').addEventListener('change', e => { const on = e.target.checked; S.led.intensity = on ? 14 : 0; S.M.led.emissiveIntensity = on ? 5 : 0; rebake(); });
   $('cSun').addEventListener('change', e => { S.sun.intensity = e.target.checked ? 4.5 : 0; rebake(); });
   $('cAO').addEventListener('change', e => { aoOn = e.target.checked; if (aoOn && !composer) makeComposer(); dirty = true; });
