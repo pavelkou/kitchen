@@ -340,6 +340,7 @@ async function build() {
     pvc: new THREE.MeshStandardMaterial({ color: 0xf4f4f4, roughness: 0.4 }),
     lamp: new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0xf3f6ff, emissiveIntensity: 4.5 }),
     led: new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0xfcfcfa, emissiveIntensity: 5 }),
+    ledWarm: new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0xffd6a0, emissiveIntensity: 4 }),
     display: new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0x6fd3ff, emissiveIntensity: 1.2 }),
     glass: new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.02, transparent: true, opacity: 0.08, depthWrite: false }),
     ground: new THREE.MeshStandardMaterial({ color: 0x8c9878, roughness: 1 }),
@@ -941,7 +942,14 @@ async function build() {
       box(W - 0.05, 0.25, 0.02, 0, 0.06 + 0.125, D / 2 - 0.01);
       add(RB(W - 0.15, 0.17, 0.012, 0.006), wood, 0, 0.185, D / 2 + 0.004, 0, cab);
       add(new THREE.CylinderGeometry(0.006, 0.006, 0.2, 12), new THREE.MeshStandardMaterial({ color: 0xc9a75a, metalness: 1, roughness: 0.25 }), 0, 0.2, D / 2 + 0.03, 0, cab).rotation.z = Math.PI / 2;
-      // ---- shoes (toe toward +z) ----
+      // three closed white doors over the shoe cubbies (3 mm gaps), slim vertical brass handles
+      { const dw = (W - 0.006 - 2 * 0.003) / 3, dy0 = 0.315, dy1 = Hc - 0.004, brass = new THREE.MeshStandardMaterial({ color: 0xc9a75a, metalness: 1, roughness: 0.25 });
+        for (let c = 0; c < 3; c++) { const x = -W / 2 + 0.003 + dw / 2 + c * (dw + 0.003);
+          box(dw, dy1 - dy0, 0.019, x, (dy0 + dy1) / 2, D / 2 + 0.0095);
+          const hx = x + (c === 0 ? 1 : -1) * (dw / 2 - 0.035);                                    // outer doors open outward, middle opens left
+          add(new THREE.CylinderGeometry(0.006, 0.006, 0.22, 12), brass, c === 1 ? x - dw / 2 + 0.035 : hx, 1.0, D / 2 + 0.04, 0, cab);
+          for (const yy of [0.9, 1.1]) add(new THREE.CylinderGeometry(0.004, 0.004, 0.022, 8), brass, c === 1 ? x - dw / 2 + 0.035 : hx, yy, D / 2 + 0.029, 0, cab).rotation.x = Math.PI / 2; } }
+      // ---- shoes (toe toward +z) — now hidden behind the doors, so not built ----
       const mc = {}; const mat = (c, r = 0.6) => mc[c + r] || (mc[c + r] = new THREE.MeshStandardMaterial({ color: c, roughness: r }));
       const S = new THREE.SphereGeometry(1, 20, 14);
       const part = (g, geo, m, x, y, z, sx = 1, sy = 1, sz = 1) => { const p = new THREE.Mesh(geo, m); p.position.set(x, y, z); p.scale.set(sx, sy, sz); p.castShadow = p.receiveShadow = true; g.add(p); return p; };
@@ -975,7 +983,7 @@ async function build() {
         ['boot', 0x8fa284], ['boot', 0x8a5232], ['sneaker', 0xf1f1ef, 0xd8d8d8],
         ['boot', 0x9aaa8c], ['boot', 0x7d4a2e], ['sneaker', 0xf4f4f2, 0xd22c2c],
       ];
-      pairs.forEach(([type, c, c2], i) => {
+      if (false) pairs.forEach(([type, c, c2], i) => {
         const row = Math.floor(i / 3), col = i % 3, x = (col - 1) * (cw + 0.016), y = Hc - 0.035 - (row + 1) * rh + 0.008;
         for (const sgn of [-1, 1]) { const g = new THREE.Group(); g.position.set(x + sgn * 0.056, y, 0.0); g.rotation.y = sgn * 0.05; cab.add(g);
           SHOE[type](g, c, c2); }                                                                          // left + right shoe, toes slightly splayed
@@ -1305,6 +1313,11 @@ async function build() {
       const lens = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.038, 0.004, 32), M.lamp); lens.position.set(xc, by0 - 0.009, zc); scene.add(lens);
       const l = new THREE.SpotLight(0xf1f5ff, 6, 0, 0.6, 0.7, 2); l.position.set(xc, by0 - 0.02, zc); l.target.position.set(xc, 0, zc);
       scene.add(l, l.target); bulkSpots.push(l); }
+    // warm LED strip in a shadow-gap along the bulkhead's living-room bottom edge, so the box reads as floating
+    B(bx0 + 0.02, by0 - 0.001, bz0 + 0.02, bx1 - 0.02, by0 + 0.012, bz0 + 0.045, M.dark, { cast: false });           // recessed aluminium channel
+    B(bx0 + 0.025, by0 + 0.004, bz0 + 0.026, bx1 - 0.025, by0 + 0.012, bz0 + 0.039, M.ledWarm, { cast: false });      // diffuser
+    const strip = new THREE.RectAreaLight(0xffd6a0, 5, bx1 - bx0 - 0.05, 0.015);
+    strip.position.set((bx0 + bx1) / 2, by0 - 0.002, bz0 + 0.032); strip.lookAt((bx0 + bx1) / 2, 0, bz0 - 0.5); scene.add(strip); bulkSpots.push(strip);
   }
   /* ----- lights ----- */
   const spots = [];
@@ -1655,7 +1668,7 @@ function mergeStatic(S) {
 /* ---------------- start ---------------- */
 (async () => {
   const S = await build();
-  $('cSpots').addEventListener('change', e => { const on = e.target.checked; S.spots.forEach(s => s.intensity = on ? 9 : 0); S.pendants.forEach(p => p.intensity = on ? 3 : 0); S.bulkSpots.forEach(p => p.intensity = on ? 6 : 0); S.M.lamp.emissiveIntensity = on ? 4.5 : 0; rebake(); });
+  $('cSpots').addEventListener('change', e => { const on = e.target.checked; S.spots.forEach(s => s.intensity = on ? 9 : 0); S.pendants.forEach(p => p.intensity = on ? 3 : 0); S.bulkSpots.forEach(p => p.intensity = on ? (p.isRectAreaLight ? 5 : 6) : 0); S.M.ledWarm.emissiveIntensity = on ? 4 : 0; S.M.lamp.emissiveIntensity = on ? 4.5 : 0; rebake(); });
   $('cLed').addEventListener('change', e => { const on = e.target.checked; S.led.intensity = on ? 14 : 0; S.M.led.emissiveIntensity = on ? 5 : 0; rebake(); });
   $('cSun').addEventListener('change', e => { S.sun.intensity = e.target.checked ? 4.5 : 0; rebake(); });
   $('cAO').addEventListener('change', e => { aoOn = e.target.checked; if (aoOn && !composer) makeComposer(); dirty = true; });
