@@ -655,6 +655,99 @@ async function build() {
   grinder.position.set(-3.637 + 0.05 + 0.077, 0.92, 1.86 + 0.15); // 15 cm further in from the island edge
 
 
+
+  /* ----- living & dining furniture (from the design render; no added light sources) ----- */
+  (function livingRoom() {
+    const fab = new THREE.MeshStandardMaterial({ color: 0xd8d0c3, roughness: 0.95 });
+    const fab2 = new THREE.MeshStandardMaterial({ color: 0xcfc6b8, roughness: 0.95 });
+    const pil = [0xb9ae9d, 0x8b847a, 0x6c665f, 0xcdbfa8, 0x9a9085].map(c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.95 }));
+    const throwM = new THREE.MeshStandardMaterial({ color: 0xc4b59d, roughness: 0.95 });
+    const darkTop = new THREE.MeshStandardMaterial({ color: 0x2f2d2b, roughness: 0.55 });
+    const blackMetal = new THREE.MeshStandardMaterial({ color: 0x1c1c1d, metalness: 0.6, roughness: 0.4 });
+    const walnutM = new THREE.MeshStandardMaterial({ map: makeWood('#6a4a34', 21), roughness: 0.5 });
+    const oakM = new THREE.MeshStandardMaterial({ map: makeWood('#b89470', 17), roughness: 0.55 });
+    const tvGlass = new THREE.MeshPhysicalMaterial({ color: 0x050506, roughness: 0.08, clearcoat: 1 });
+    const potDark = new THREE.MeshStandardMaterial({ color: 0x3a3a36, roughness: 0.4 });
+    const potLight = new THREE.MeshStandardMaterial({ color: 0xd9d3c8, roughness: 0.8 });
+    const leaf = new THREE.MeshStandardMaterial({ color: 0x3f5a2e, roughness: 0.8 });
+    const leaf2 = new THREE.MeshStandardMaterial({ color: 0x55703a, roughness: 0.8 });
+    const book = [0xe9e4da, 0xcfc8bb].map(c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.8 }));
+    const rugM = (() => { const [c, g] = canvas(512, 512); const R = rng(41); g.fillStyle = '#b9ad9a'; g.fillRect(0, 0, 512, 512);
+      for (let y = 0; y < 512; y += 6) for (let x = 0; x < 512; x += 8) { const v = 150 + R() * 70; g.fillStyle = `rgb(${v},${v * 0.94},${v * 0.86})`; g.fillRect(x + (y / 6 % 2) * 4, y, 5 + R() * 2, 3); }
+      const t = toTex(c); t.repeat.set(5, 3.4); return new THREE.MeshStandardMaterial({ map: t, roughness: 1 }); })();
+    const artM = (() => { const [c, g] = canvas(512, 340); g.fillStyle = '#e6dccb'; g.fillRect(0, 0, 512, 340);
+      g.fillStyle = 'rgba(176,160,136,.55)'; g.beginPath(); g.ellipse(150, 170, 120, 130, 0.2, 0, 6.283); g.fill();
+      g.fillStyle = 'rgba(150,138,120,.45)'; g.beginPath(); g.ellipse(370, 180, 110, 125, -0.3, 0, 6.283); g.fill();
+      g.strokeStyle = 'rgba(120,108,92,.5)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(250, 20); g.bezierCurveTo(230, 120, 280, 220, 255, 330); g.moveTo(10, 175); g.lineTo(500, 168); g.stroke();
+      return new THREE.MeshStandardMaterial({ map: toTex(c), roughness: 0.9 }); })();
+    const RB = (w, h, d, r) => new RoundedBoxGeometry(w, h, d, 3, r);
+    const add = (geo, mat, x, y, z, ry = 0, parent = scene) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.y = ry; m.castShadow = m.receiveShadow = true; parent.add(m); return m; };
+    function plant(x, y, z, s = 1, pot = potDark) {
+      add(new THREE.CylinderGeometry(0.075 * s, 0.06 * s, 0.16 * s, 24), pot, x, y + 0.08 * s, z);
+      const R = rng(Math.round(x * 100 + z * 10));
+      for (let i = 0; i < 26; i++) {
+        const a = R() * 6.283, r = R() * 0.14 * s, h = 0.18 * s + R() * 0.32 * s;
+        const m = add(new THREE.IcosahedronGeometry((0.03 + R() * 0.03) * s, 0), R() < 0.5 ? leaf : leaf2, x + Math.cos(a) * r, y + h, z + Math.sin(a) * r);
+        m.scale.set(1, 0.5, 1.6); m.rotation.set(R() * 3, R() * 3, R() * 3);
+      }
+    }
+    // --- layout anchors (model metres) ---
+    const SW = pZ(368.76);                    // bedrooms wall face (living side), z = 6.40
+    const TVW = pX(542.7);                    // stair-core wall face, x = 4.07
+    const SX = (pX(279) + pX(513.2)) / 2;     // centre between the two bedroom doors
+    // sofa 260 × 100, back against the bedrooms wall, facing the kitchen (−z)
+    { const L = 2.6, D = 1.0, z0 = SW - D;
+      add(RB(L, 0.22, D - 0.05, 0.03), fab2, SX, 0.17, z0 + D / 2);                          // base
+      for (const s of [-1, 1]) add(RB(0.22, 0.62, D, 0.06), fab, SX + s * (L / 2 - 0.11), 0.31, z0 + D / 2); // arms
+      add(RB(L - 0.02, 0.6, 0.24, 0.06), fab, SX, 0.58, SW - 0.13);                       // back frame
+      for (let i = 0; i < 3; i++) { const w = (L - 0.44) / 3, x = SX - (L - 0.44) / 2 + w * (i + 0.5);
+        add(RB(w - 0.01, 0.16, D - 0.3, 0.05), fab, x, 0.36, z0 + (D - 0.3) / 2 + 0.03);       // seat cushions
+        add(RB(w - 0.02, 0.42, 0.18, 0.07), fab, x, 0.62, SW - 0.33); }                      // back cushions
+      const P = [[-0.95, 0], [-0.7, 1], [-0.42, 2], [-0.18, 3], [0.35, 3], [0.62, 2], [0.88, 4]];
+      P.forEach(([dx, k], i) => { const m = add(RB(0.42, 0.42, 0.13, 0.06), pil[k], SX + dx, 0.66, SW - 0.45, 0); m.rotation.x = 0.25; m.rotation.z = (i % 2 ? 0.08 : -0.06); });
+      const th = add(RB(0.45, 0.02, 0.75, 0.01), throwM, SX + 0.15, 0.45, z0 + 0.42); th.rotation.y = 0.15;
+      add(RB(0.45, 0.02, 0.3, 0.01), throwM, SX + 0.2, 0.3, z0 - 0.0).rotation.x = 1.3;
+      plant(SX + L / 2 + 0.35, 0, SW - 0.35, 1.7, potLight); }                               // floor plant beside the sofa
+    // rug 300 × 200
+    add(new THREE.BoxGeometry(3.0, 0.012, 2.0), rugM, SX, 0.006, SW - 1.0 - 0.85);
+    // round coffee table Ø100, dark top on a drum base, with books, bowl, candle and a small plant
+    { const cz = SW - 1.95; add(new THREE.CylinderGeometry(0.5, 0.5, 0.05, 64), darkTop, SX, 0.375, cz);
+      add(new THREE.CylinderGeometry(0.27, 0.27, 0.35, 48), darkTop, SX, 0.175, cz);
+      add(new THREE.BoxGeometry(0.3, 0.035, 0.22), book[0], SX + 0.05, 0.418, cz + 0.05, 0.3);
+      add(new THREE.BoxGeometry(0.28, 0.03, 0.2), book[1], SX + 0.05, 0.45, cz + 0.05, 0.2);
+      add(new THREE.CylinderGeometry(0.07, 0.05, 0.035, 24), potDark, SX + 0.25, 0.418, cz + 0.12);
+      add(new THREE.CylinderGeometry(0.035, 0.035, 0.08, 20), blackMetal, SX + 0.2, 0.44, cz - 0.15);
+      plant(SX - 0.02, 0.465, cz + 0.05, 0.9); }
+    // TV wall: 220 cm fluted oak console + 75" TV + soundbar on the stair-core wall, facing the dining window (−x)
+    { const cz = 1.9, L = 2.2;
+      add(new THREE.BoxGeometry(0.45, 0.42, L), oakM, TVW - 0.225, 0.12 + 0.21, cz);
+      for (let i = 0; i < 44; i++) add(new THREE.CylinderGeometry(0.012, 0.012, 0.4, 8), oakM, TVW - 0.452, 0.33, cz - L / 2 + 0.025 + i * (L - 0.05) / 43);  // fluting
+      add(new THREE.BoxGeometry(0.4, 0.12, L - 0.1), blackMetal, TVW - 0.24, 0.06, cz);               // recessed plinth
+      add(new THREE.BoxGeometry(0.035, 0.95, 1.66), tvGlass, TVW - 0.03, 1.32, cz);                  // 75" TV on the wall
+      add(new THREE.BoxGeometry(0.1, 0.07, 1.0), blackMetal, TVW - 0.28, 0.575, cz);                 // soundbar
+      plant(TVW - 0.25, 0.54, cz - 0.85, 1.0); }
+    // framed art above the sofa (140 × 95, black frame)
+    { const y = 1.62, w = 1.4, h = 0.95;
+      add(new THREE.BoxGeometry(w, h, 0.03), blackMetal, SX, y, SW - 0.016);
+      add(new THREE.PlaneGeometry(w - 0.06, h - 0.06), artM, SX, y, SW - 0.033, Math.PI); }
+    // dining: Ø120 walnut table on a fluted pedestal, 4 upholstered chairs, centred on the dining window
+    { const cx = -2.75, cz = pZ(482.04);
+      add(new THREE.CylinderGeometry(0.6, 0.6, 0.035, 72), walnutM, cx, 0.74, cz);
+      add(new THREE.CylinderGeometry(0.24, 0.27, 0.7, 40), walnutM, cx, 0.37, cz);
+      for (let i = 0; i < 32; i++) { const a = i / 32 * 6.283; add(new THREE.CylinderGeometry(0.016, 0.016, 0.68, 6), walnutM, cx + Math.cos(a) * 0.255, 0.37, cz + Math.sin(a) * 0.255); }
+      add(new THREE.CylinderGeometry(0.3, 0.3, 0.02, 40), walnutM, cx, 0.01, cz);
+      plant(cx, 0.757, cz, 1.0, potLight);
+      const back = new THREE.CylinderGeometry(0.27, 0.27, 0.36, 32, 1, true, -Math.PI * 0.62, Math.PI * 1.24);
+      for (const a of [Math.PI / 4, 3 * Math.PI / 4, 5 * Math.PI / 4, 7 * Math.PI / 4]) {
+        const g = new THREE.Group(); g.position.set(cx + Math.cos(a) * 0.72, 0, cz + Math.sin(a) * 0.72); g.rotation.y = -a - Math.PI / 2; scene.add(g);
+        add(RB(0.52, 0.09, 0.5, 0.04), fab, 0, 0.47, 0, 0, g);                                       // seat
+        const b = add(back, fab, 0, 0.7, 0.05, Math.PI, g); b.material.side = THREE.DoubleSide;      // curved back
+        add(new THREE.TorusGeometry(0.27, 0.035, 10, 32, Math.PI * 1.24), fab, 0, 0.88, 0.05, 0, g).rotation.set(Math.PI / 2, 0, Math.PI * 0.5 - Math.PI * 0.62 + Math.PI);
+        for (const [lx, lz] of [[-0.2, -0.18], [0.2, -0.18], [-0.2, 0.18], [0.2, 0.18]]) {
+          const l = add(new THREE.CylinderGeometry(0.012, 0.008, 0.45, 10), blackMetal, lx * 1.05, 0.215, lz * 1.05, 0, g); l.rotation.set(lz * 0.35, 0, -lx * 0.35); }
+      } }
+  })();
+
   /* ----- lights ----- */
   const spots = [];
   for (const [x, z] of [[-2.9, 1.25], [-1.2, 1.25], [0.5, 1.25]]) {
@@ -815,6 +908,10 @@ function drawMap() {
   const rect = (x0, z0, x1, z1, f) => { mg.fillStyle = f; mg.fillRect(X(x0), Z(z0), (x1 - x0) * s, (z1 - z0) * s); };
   rect(-3.988, 0, 1.2 + DX, 0.62, '#e9e6df'); rect(1.2 + DX, 0, 3.523 + DX, 0.7, '#bfbfbf');
   rect(-4, 1.75, -2.0, 2.65, '#e9e6df');
+  { const SW = pZ(368.76), SX = (pX(279) + pX(513.2)) / 2, TVW = pX(542.7);                      // living furniture
+    rect(SX - 1.3, SW - 1.0, SX + 1.3, SW, '#cfc6b8'); rect(SX - 1.5, SW - 2.85, SX + 1.5, SW - 0.85, 'rgba(185,173,154,.6)');
+    rect(TVW - 0.45, 0.8, TVW, 3.0, '#b89470');
+    mg.fillStyle = '#6a4a34'; mg.beginPath(); mg.arc(X(-2.75), Z(pZ(482.04)), 0.6 * s, 0, 6.283); mg.fill(); }
   WALLS.forEach(([x0, y0, x1, y1, ops = []]) => {
     prect(x0, y0, x1, y1, '#f2f2f2');
     const alongX = (x1 - x0) >= (y1 - y0);
