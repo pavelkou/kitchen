@@ -1220,6 +1220,33 @@ async function build() {
     ANIMS.push(() => { const d = new Date(), m = d.getMinutes() + d.getSeconds() / 60, h = (d.getHours() % 12) + m / 60;
       mH.rotation.z = -m / 60 * Math.PI * 2; hH.rotation.z = -h / 12 * Math.PI * 2; });
   }
+  /* ----- Dyson Purifier Cool Gen1 (TP10): 105 cm tall, Ø22 cm base, loop 20.4 × 12 cm — in the corner between the dining
+     window and the balcony door, oscillating slowly through 90° across the room ----- */
+  { const g = new THREE.Group(); g.position.set(-3.86, 0, pZ(369.24) - 0.17); scene.add(g);
+    const silver = new THREE.MeshStandardMaterial({ color: 0xbfc2c4, metalness: 1, roughness: 0.18 });
+    const whiteP = new THREE.MeshStandardMaterial({ color: 0xf4f4f2, roughness: 0.35 });
+    const grill = (() => { const [c, x] = canvas(256, 256); x.fillStyle = '#f2f2f0'; x.fillRect(0, 0, 256, 256); x.fillStyle = 'rgba(60,60,62,0.75)';
+      for (let j = 0; j < 32; j++) for (let i = 0; i < 32; i++) { x.beginPath(); x.arc(i * 8 + (j % 2) * 4 + 2, j * 8 + 4, 2.1, 0, 6.283); x.fill(); }
+      const t = toTex(c); t.repeat.set(6, 4); return new THREE.MeshStandardMaterial({ map: t, roughness: 0.5 }); })();
+    const add = (geo, mat, y, parent = g) => { const m = new THREE.Mesh(geo, mat); m.position.y = y; m.castShadow = m.receiveShadow = true; m.userData.keep = true; parent.add(m); return m; };
+    add(new THREE.CylinderGeometry(0.124, 0.124, 0.006, 64), silver, 0.003);                       // floor plate
+    add(new THREE.CylinderGeometry(0.11, 0.112, 0.05, 64), silver, 0.031);                         // polished base ring
+    add(new THREE.CylinderGeometry(0.106, 0.106, 0.33, 64, 1, true), grill, 0.221);                // perforated filter housing
+    const head = new THREE.Group(); head.position.y = 0.386; g.add(head);                          // everything above the filter oscillates
+    add(new THREE.CylinderGeometry(0.088, 0.106, 0.12, 64), silver, 0.06, head);                   // tapered neck
+    const disp = new THREE.Mesh(new THREE.CircleGeometry(0.022, 32), new THREE.MeshStandardMaterial({ color: 0x050505, emissive: 0x3a6a3a, emissiveIntensity: 0.25, roughness: 0.1 }));
+    disp.position.set(0, 0.07, 0.097); disp.rotation.x = -0.12; disp.userData.keep = true; head.add(disp);
+    // loop amplifier: stadium-shaped ring, 20.4 cm wide, 12 cm deep, top at 105 cm
+    const stadium = (w, h, holeW) => { const sh = new THREE.Shape(), r = w / 2, hh = h / 2 - r;
+      sh.absarc(0, hh, r, 0, Math.PI, false); sh.absarc(0, -hh, r, Math.PI, 2 * Math.PI, false); sh.closePath();
+      const ri = holeW / 2, hi = h / 2 - (w - holeW) / 2 - ri, hole = new THREE.Path();
+      hole.absarc(0, hi, ri, 0, Math.PI, false); hole.absarc(0, -hi, ri, Math.PI, 2 * Math.PI, false); hole.closePath(); sh.holes.push(hole); return sh; };
+    const LH = 1.05 - 0.386 - 0.12;
+    const loop = new THREE.Mesh(new THREE.ExtrudeGeometry(stadium(0.204, LH, 0.142), { depth: 0.1, bevelEnabled: true, bevelThickness: 0.01, bevelSize: 0.008, bevelSegments: 4, curveSegments: 48 }), whiteP);
+    loop.position.set(0, 0.12 + LH / 2, -0.05); loop.castShadow = true; loop.userData.keep = true; head.add(loop);
+    const base = 3 * Math.PI / 4;                                                                 // facing into the room (diagonal)
+    ANIMS.push(t => { head.rotation.y = base + (Math.PI / 4) * Math.sin(t / 1000 * Math.PI * 2 / 24); });   // ±45°, 24 s per sweep
+  }
   const bulkSpots = [];
   /* ----- A/C bulkhead: plasterboard box 45 cm below the ceiling, as deep as the hallway (~104 cm), running from the
      hallway along the bedrooms wall to the balcony door's edge; three linear supply vents face the living room ----- */
