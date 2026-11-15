@@ -166,6 +166,7 @@ const WALLS = [
   [369.24, 822.8, 510.84, 836.24],                                           // bathroom south
   [908.4, 85.04, 918.84, 479.12],                                            // bedroom 1 party wall
   [731.64, 85.04, 737.4, 406.64],                                            // long kitchen wall
+  [680.76, 406.64, 737.4, 412.4],                                           // return at the end of the long wall (kitchen side)
   [737.4, 406.64, 791.16, 412.4, [[742.0, 789.0, 0, 2.1, 'door']]],         // bedroom 1 door
   [796.92, 323.12, 908.4, 328.88],                                           // en-suite top
   [789.24, 323.12, 796.92, 466.16, [[332, 375, 0, 2.1, 'door']]],           // en-suite door wall
@@ -485,9 +486,10 @@ async function build() {
   grid(1.2, 2.0, 1.565, 1.948, TZ - 0.019, TZ, 1, 1);
   grid(1.2, 2.0, 1.953, 2.65, TZ - 0.019, TZ, 1, 1);
   // fridge niche
-  B(2.0, 1.86, 0, 2.95, 1.95, 0.56, M.dark);
-  B(2.0, 1.95, 0, 2.95, 2.65, TZ - 0.02, carcassFront); grid(2.0, 2.95, 1.953, 2.65, TZ - 0.019, TZ, 2, 1);
-  B(2.03, 0.05, 0.02, 2.92, 1.85, 0.7, M.fridge);
+  // niche 92.3 cm so the run ends exactly at the end of the 567 cm wall
+  B(2.0, 1.86, 0, 2.923, 1.95, 0.56, M.dark);
+  B(2.0, 1.95, 0, 2.923, 2.65, TZ - 0.02, carcassFront); grid(2.0, 2.923, 1.953, 2.65, TZ - 0.019, TZ, 2, 1);
+  B(2.017, 0.05, 0.02, 2.907, 1.85, 0.7, M.fridge);
   B(2.08, 0.0, 0.6, 2.87, 0.05, 0.68, M.dark);
   B(2.462, 0.06, 0.7, 2.468, 1.84, 0.702, M.dark);
   for (const hx of [2.42, 2.49]) {
@@ -496,10 +498,10 @@ async function build() {
   }
   B(2.12, 1.0, 0.7, 2.33, 1.42, 0.704, M.glassBlack);
   B(2.17, 1.34, 0.704, 2.28, 1.385, 0.706, M.display, { cast: false });
-  // pantry + filler
-  B(2.95, 0, 0, 3.65, 0.1, TZ - 0.06, M.dark);
-  B(2.95, 0.1, 0, 3.65, 2.65, TZ - 0.02, carcassFront);
-  grid(2.95, 3.65, 0.103, 1.948, TZ - 0.019, TZ, 1, 1); grid(2.95, 3.65, 1.953, 2.65, TZ - 0.019, TZ, 1, 1);
+  // pantry, 60 cm
+  B(2.923, 0, 0, 3.523, 0.1, TZ - 0.06, M.dark);
+  B(2.923, 0.1, 0, 3.523, 2.65, TZ - 0.02, carcassFront);
+  grid(2.923, 3.523, 0.103, 1.948, TZ - 0.019, TZ, 1, 1); grid(2.923, 3.523, 1.953, 2.65, TZ - 0.019, TZ, 1, 1);
   for (const o of scene.children.slice(n0)) o.position.x += DX;
 
   /* ----- island: ceramic top + waterfall sides ----- */
@@ -790,7 +792,7 @@ function drawMap() {
   const prect = (x0, y0, x1, y1, f) => { mg.fillStyle = f; const a = X(pX(y0)), b = Z(pZ(x1)); mg.fillRect(a, b, X(pX(y1)) - a, Z(pZ(x0)) - b); };
   BALCONIES.forEach(r => prect(...r, 'rgba(160,160,150,.35)'));
   const rect = (x0, z0, x1, z1, f) => { mg.fillStyle = f; mg.fillRect(X(x0), Z(z0), (x1 - x0) * s, (z1 - z0) * s); };
-  rect(-3.988, 0, 1.2 + DX, 0.62, '#e9e6df'); rect(1.2 + DX, 0, 3.65 + DX, 0.7, '#bfbfbf');
+  rect(-3.988, 0, 1.2 + DX, 0.62, '#e9e6df'); rect(1.2 + DX, 0, 3.523 + DX, 0.7, '#bfbfbf');
   rect(-4, 1.75, -2.0, 2.65, '#e9e6df');
   WALLS.forEach(([x0, y0, x1, y1, ops = []]) => {
     prect(x0, y0, x1, y1, '#f2f2f2');
