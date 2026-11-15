@@ -431,6 +431,55 @@ async function build() {
   BALCONIES.forEach(([x0, y0, x1, y1], i) => i === 0
     ? PB(x0, y0, x1, y1, 0, 0.006, nordic, { uv: { sx: 0.6, sy: 1.2, ox: -pX(77.36), oy: pZ(351.96) } })
     : PB(x0, y0, x1, y1, 0, 0.006, outdoor));
+  // balcony façade: white stone cladding (blocks in running bond, soft grey veins, shadow-line joints) on the walls facing
+  // the balcony — the bedroom-2 window wall and the sliding-door wall — including the window reveals
+  const stone = (() => {
+    const S = 1024, [c, g] = canvas(S, S); const R = rng(123); const pxm = S / 2.4;          // texture = 2.4 m × 2.4 m
+    const rowH = 0.45 * pxm;
+    for (let r = 0; r * rowH < S; r++) {
+      let x = -((r % 2) * 0.35 + R() * 0.1) * pxm;
+      while (x < S) { const w = (0.55 + R() * 0.45) * pxm, b = 228 + R() * 14;
+        g.fillStyle = `rgb(${b},${b},${b - 3})`; g.fillRect(x, r * rowH, w, rowH);
+        g.save(); g.beginPath(); g.rect(x, r * rowH, w, rowH); g.clip();
+        for (let k = 0; k < 3; k++) { const gr = g.createRadialGradient(x + R() * w, r * rowH + R() * rowH, 0, x + R() * w, r * rowH + R() * rowH, 60 + R() * 120);
+          gr.addColorStop(0, `rgba(200,200,198,${0.12 + R() * 0.12})`); gr.addColorStop(1, 'rgba(200,200,198,0)'); g.fillStyle = gr; g.fillRect(x, r * rowH, w, rowH); }
+        for (let v = 0; v < 2 + R() * 3; v++) { let vx = x + R() * w, vy = r * rowH + R() * rowH, a = R() * 6.283;
+          g.strokeStyle = `rgba(120,118,118,${0.12 + R() * 0.2})`; g.lineWidth = 0.6 + R(); g.beginPath(); g.moveTo(vx, vy);
+          for (let i = 0; i < 40; i++) { a += (R() - 0.5) * 0.5; vx += Math.cos(a) * 6; vy += Math.sin(a) * 6; g.lineTo(vx, vy); } g.stroke(); }
+        g.restore();
+        g.fillStyle = 'rgba(150,150,148,0.55)'; g.fillRect(x, r * rowH, 2, rowH);                // vertical joint
+        x += w; }
+      g.fillStyle = 'rgba(120,120,118,0.55)'; g.fillRect(0, r * rowH, S, 3);                     // horizontal shadow-line joint
+      g.fillStyle = 'rgba(255,255,255,0.5)'; g.fillRect(0, r * rowH + 3, S, 2);
+    }
+    return new THREE.MeshStandardMaterial({ map: toTex(c), roughness: 0.6 });
+  })();
+  { const su = { sx: 2.4, sy: 2.4 }, t = 0.02 * PS;
+    const cladX = (x0, x1, h0, h1) => PB(x0, 212.72 - t, x1, 212.72, h0, h1, stone, { uv: su });        // bedroom-2 window wall (faces the balcony)
+    cladX(155.64, 249.72, 0, RH); cladX(317.4, 351.96, 0, RH); cladX(249.72, 317.4, 0, 1.058); cladX(249.72, 317.4, 2.219, RH);
+    const rv = 0.012 * PS;                                                                               // window reveals in stone
+    PB(249.72, 212.72, 249.72 + rv, 229.04, 1.058, 2.219, stone, { uv: su }); PB(317.4 - rv, 212.72, 317.4, 229.04, 1.058, 2.219, stone, { uv: su });
+    PB(249.72, 212.72, 317.4, 229.04, 1.058, 1.07, stone, { uv: su }); PB(249.72, 212.72, 317.4, 229.04, 2.207, 2.219, stone, { uv: su });
+    const cladZ = (y0, y1, h0, h1) => PB(351.96 - t, y0, 351.96, y1, h0, h1, stone, { uv: su });         // sliding-door wall
+    cladZ(77.36, 98.0, 0, RH); cladZ(98.0, 209.84, 2.19, RH); cladZ(209.84, 212.72 - t, 0, RH);
+  }
+  // bedroom 2 (little girl's room): closed blush-pink curtains on the balcony window, floor length, soft folds
+  { const pink = (() => { const [c, g] = canvas(256, 256); const R = rng(7); g.fillStyle = '#f2c4cf'; g.fillRect(0, 0, 256, 256);
+      for (let i = 0; i < 26; i++) { const x = (i % 6) * 44 + ((i / 6 | 0) % 2) * 22 + 10, y = (i / 6 | 0) * 52 + 16;
+        g.fillStyle = 'rgba(255,255,255,0.85)'; g.beginPath(); for (let k = 0; k < 10; k++) { const r = k % 2 ? 3 : 7, a = -Math.PI / 2 + k * Math.PI / 5; g.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); } g.fill(); }
+      const t = toTex(c); t.repeat.set(5, 9); return new THREE.MeshStandardMaterial({ map: t, roughness: 0.92, side: THREE.DoubleSide }); })();
+    const xRoom = pX(229.04) + 0.09, z0 = pZ(317.4) - 0.16, z1 = pZ(249.72) + 0.16, top = 2.36, H = top - 0.02;
+    for (const [a, b] of [[z0, (z0 + z1) / 2 + 0.03], [(z0 + z1) / 2 - 0.03, z1]]) {
+      const w = b - a, geo = new THREE.PlaneGeometry(w, H, 60, 4), p = geo.attributes.position;
+      for (let i = 0; i < p.count; i++) p.setZ(i, 0.028 * Math.sin(p.getX(i) / w * Math.PI * 2 * 7));   // pleated folds
+      geo.computeVertexNormals();
+      const m = new THREE.Mesh(geo, pink); m.rotation.y = Math.PI / 2; m.position.set(xRoom + (a < z0 + 0.01 ? 0 : 0.012), 0.02 + H / 2, (a + b) / 2);
+      m.castShadow = m.receiveShadow = true; scene.add(m);
+    }
+    const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, z1 - z0 + 0.12, 16), M.steel); rod.rotation.x = Math.PI / 2;
+    rod.position.set(xRoom, top + 0.02, (z0 + z1) / 2); scene.add(rod);
+    for (const z of [z0 - 0.07, z1 + 0.07]) { const f = new THREE.Mesh(new THREE.SphereGeometry(0.022, 16, 12), M.steel); f.position.set(xRoom, top + 0.02, z); scene.add(f); }
+  }
   // floor (Lunaris Perla, grid kept from the kitchen) + ceiling over the whole apartment
   const FX0 = pX(68.7) - 0.05, FX1 = pX(836.24) + 0.05, FZ0 = pZ(918.84) - 0.05, FZ1 = pZ(147.48) + 0.05;
   B(FX0, -0.1, FZ0, FX1, 0, FZ1, M.floor, { uv: { sx: 2.4, sy: 2.4, ox: 4, oy: 0.55 } });
