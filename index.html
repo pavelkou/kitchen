@@ -146,6 +146,7 @@ camera.rotation.order = 'YXZ';
    1 m = 56.693 pt. Wall = [x0, y0, x1, y1, openings], opening = [from, to, sill, top, kind] along the wall's long axis. */
 const PS = 56.693, PY0 = 85.04, PX0 = 731.64;
 const pX = y => -4 + (y - PY0) / PS, pZ = x => (PX0 - x) / PS;
+const WARM_LIGHTS = [];   // extra warm lights switched with the ceiling-lights toggle
 const WALLS = [
   [351.96, 68.7, 918.84, 85.04, [[385.56, 578.52, 0.299, 2.219, 'win'], [643.8, 683.16, 1.058, 2.219, null], [776.76, 867.48, 1.058, 2.219, 'win']]], // façade: dining, kitchen, bedroom 1 windows
   [351.96, 85.04, 369.24, 229.04, [[98.0, 209.84, 0, 2.19, 'slide']]],        // balcony sliding door
@@ -840,6 +841,32 @@ async function build() {
     // --- layout anchors (model metres) ---
     const SW = pZ(369.24);                    // bedrooms wall face (living side), z = 6.40
     const TVW = pX(542.7);                    // stair-core wall face, x = 4.07
+    // tall fiddle-leaf fig in a sand-coloured ceramic planter behind the swivel chair (gives the chair "backing")
+    { const x = -0.18, z = 3.32, pot = new THREE.Mesh(new THREE.LatheGeometry([[0, 0], [0.15, 0], [0.19, 0.08], [0.2, 0.4], [0.185, 0.42], [0, 0.4]].map(([r, y]) => new THREE.Vector2(r, y)), 40), potLight);
+      pot.position.set(x, 0, z); pot.castShadow = pot.receiveShadow = true; scene.add(pot);
+      add(new THREE.CylinderGeometry(0.018, 0.026, 1.0, 10), new THREE.MeshStandardMaterial({ color: 0x6b5a45, roughness: 0.9 }), x, 0.9, z);
+      const Rp = rng(4242), lg = new THREE.SphereGeometry(1, 10, 6);
+      for (let i = 0; i < 70; i++) { const h = 0.75 + Rp() * 1.0, a = Rp() * 6.283, r = (0.08 + Rp() * 0.26) * Math.sin(Math.min(1, (h - 0.7) / 0.9) * Math.PI * 0.85 + 0.2);
+        const m = new THREE.Mesh(lg, Rp() < 0.5 ? leaf : leaf2); m.position.set(x + Math.cos(a) * r, h, z + Math.sin(a) * r);
+        m.scale.set(0.085, 0.012, 0.11); m.rotation.set((Rp() - 0.5) * 1.2, a, (Rp() - 0.3) * 0.9); m.castShadow = true; scene.add(m); } }
+    // entrance: round terracotta-and-cream rug, warm opal ceiling globe, warm abstract artwork beside the door (south = fire)
+    { const rugE = (() => { const [c, g] = canvas(512, 512); const R = rng(808); g.fillStyle = '#efe4d2'; g.fillRect(0, 0, 512, 512);
+        for (const [r, col] of [[250, '#b4623b'], [236, '#efe4d2'], [200, '#c98a5a'], [150, '#efe4d2'], [138, '#a9532f']]) { g.fillStyle = col; g.beginPath(); g.arc(256, 256, r, 0, 6.283); g.fill(); }
+        for (let i = 0; i < 9000; i++) { const v = R() * 40 - 20; g.fillStyle = `rgba(${128 + v},${100 + v},${70 + v},0.12)`; g.fillRect(R() * 512, R() * 512, 2, 2); }
+        return new THREE.MeshStandardMaterial({ map: toTex(c), roughness: 1 }); })();
+      const rg = add(new THREE.CylinderGeometry(0.47, 0.47, 0.01, 64), rugE, 3.5, 0.005, 0.55); rg.userData.keep = true;
+      const globeM = new THREE.MeshStandardMaterial({ color: 0xfff6e8, emissive: 0xffd6a0, emissiveIntensity: 1.6, roughness: 0.5 });
+      add(new THREE.CylinderGeometry(0.06, 0.06, 0.02, 24), potLight, 3.5, 2.64, 0.6);
+      add(new THREE.SphereGeometry(0.15, 32, 20), globeM, 3.5, 2.47, 0.6).castShadow = false;
+      const gl = new THREE.PointLight(0xffc98a, 6, 0, 2); gl.position.set(3.5, 2.3, 0.6); scene.add(gl); WARM_LIGHTS.push({ l: gl, m: globeM });
+      const art = (() => { const [c, g] = canvas(384, 512); g.fillStyle = '#f1e7d6'; g.fillRect(0, 0, 384, 512);
+        g.fillStyle = '#b4623b'; g.beginPath(); g.moveTo(60, 512); g.lineTo(60, 260); g.arc(192, 260, 132, Math.PI, 0); g.lineTo(324, 512); g.fill();
+        g.fillStyle = '#d99a5b'; g.beginPath(); g.arc(250, 150, 58, 0, 6.283); g.fill();
+        g.fillStyle = '#8e3d22'; g.beginPath(); g.moveTo(0, 512); g.quadraticCurveTo(150, 360, 384, 420); g.lineTo(384, 512); g.fill();
+        g.fillStyle = '#e8c9a0'; g.fillRect(118, 300, 10, 212);
+        return new THREE.MeshStandardMaterial({ map: toTex(c), roughness: 0.9 }); })();
+      add(new THREE.BoxGeometry(0.03, 0.84, 0.64), new THREE.MeshStandardMaterial({ color: 0xc9a477, roughness: 0.6 }), TVW - 0.015, 1.5, 0.48);   // oak frame
+      add(new THREE.PlaneGeometry(0.58, 0.78), art, TVW - 0.031, 1.5, 0.48, -Math.PI / 2); }
     const SX = (pX(279) + pX(513.2)) / 2 - 0.2; // between the bedroom doors, shifted 20 cm so ≥1 m stays clear between the sofa end and the TV console
     // sofa 260 × 100, back against the bedrooms wall, facing the kitchen (−z)
     { const L = 2.6, D = 1.0, z0 = SW - D;
@@ -925,7 +952,25 @@ async function build() {
         });
       }
       add(new THREE.BoxGeometry(0.1, 0.07, 1.2), blackMetal, TVW - 0.28, 0.575, cz);                 // soundbar
-      plant(TVW - 0.25, 0.54, cz - 1.2, 1.0); }
+      plant(TVW - 0.25, 0.54, cz - 1.2, 1.0);
+      // warm earth-tone décor framing the TV (feng shui: balance the big dark screen with earth + fire)
+      const terra = new THREE.MeshStandardMaterial({ color: 0xb4623b, roughness: 0.85 }), rust = new THREE.MeshStandardMaterial({ color: 0x8e3d22, roughness: 0.7 });
+      const sand = new THREE.MeshStandardMaterial({ color: 0xd8c6a6, roughness: 0.9 }), twig = new THREE.MeshStandardMaterial({ color: 0x5a4130, roughness: 0.9 });
+      const lathe = (pts, m, x, z) => { const o = new THREE.Mesh(new THREE.LatheGeometry(pts.map(([r, y]) => new THREE.Vector2(r, y)), 40), m); o.position.set(x, 0.54, z); o.castShadow = o.receiveShadow = true; scene.add(o); return o; };
+      // right end: tall terracotta vase with dried branches + small round rust vase + sand bowl
+      lathe([[0, 0], [0.07, 0], [0.11, 0.08], [0.12, 0.2], [0.09, 0.33], [0.045, 0.42], [0.05, 0.46], [0.042, 0.46], [0, 0.44]], terra, TVW - 0.23, cz + 1.28);
+      { const Rb = rng(611); for (let i = 0; i < 9; i++) { const len = 0.55 + Rb() * 0.45, a = (Rb() - 0.5) * 0.7, b = (Rb() - 0.5) * 0.7;
+          const br = new THREE.Mesh(new THREE.CylinderGeometry(0.003, 0.006, len, 6), twig); br.position.set(TVW - 0.23 + Math.sin(b) * len / 2, 0.54 + 0.42 + Math.cos(a) * len / 2, cz + 1.28 + Math.sin(a) * len / 2);
+          br.rotation.set(a, 0, -b); br.castShadow = true; scene.add(br);
+          for (let k = 0; k < 6; k++) { const t = 0.4 + Rb() * 0.6, f = new THREE.Mesh(new THREE.IcosahedronGeometry(0.012 + Rb() * 0.008, 0), Rb() < 0.5 ? sand : rust);
+            f.position.set(TVW - 0.23 + Math.sin(b) * len * t, 0.96 + Math.cos(a) * len * t, cz + 1.28 + Math.sin(a) * len * t); scene.add(f); } } }
+      lathe([[0, 0], [0.04, 0], [0.085, 0.06], [0.08, 0.12], [0.035, 0.18], [0.03, 0.2], [0, 0.19]], rust, TVW - 0.22, cz + 0.98);
+      lathe([[0, 0], [0.05, 0], [0.11, 0.05], [0.12, 0.07], [0.1, 0.065], [0, 0.02]], sand, TVW - 0.24, cz + 0.72);
+      // left side: stack of books in warm covers topped with a small terracotta bowl
+      { let y = 0.54; for (const [w, h, c] of [[0.3, 0.035, 0xc9b28c], [0.27, 0.03, 0x9a5a3a], [0.25, 0.028, 0xe4d8c2]]) {
+          const bk = new THREE.Mesh(new THREE.BoxGeometry(0.2, h, w), new THREE.MeshStandardMaterial({ color: c, roughness: 0.8 })); bk.position.set(TVW - 0.24, y + h / 2, cz - 0.82); bk.rotation.y = 0.08; bk.castShadow = bk.receiveShadow = true; scene.add(bk); y += h; }
+        const bw = lathe([[0, 0], [0.03, 0], [0.065, 0.035], [0.07, 0.05], [0.064, 0.048], [0, 0.012]], terra, TVW - 0.24, cz - 0.82); bw.position.y = y; }
+    }
     // white open shoe cabinet (3 × 8 cubbies + drawer) on the TV wall between the entrance door swing and the console,
     // every cubby holds one pair of shoes
     { const W = 0.9, D = 0.35, Hc = 2.0, wood = new THREE.MeshStandardMaterial({ color: 0xf3f3f1, roughness: 0.55 });
@@ -1307,12 +1352,6 @@ async function build() {
       for (let i = 0; i < 6; i++) { const y = vy0 + 0.012 + i * (vy1 - vy0 - 0.024) / 5;
         B(vx0 + 0.004, y - 0.004, f - 0.016, vx1 - 0.004, y + 0.004, f - 0.004, alu, { cast: false }); }
     }
-    // three round decorative downlights in the underside, lined up with the vents, shining down
-    for (const xc of [-0.9, 1.1, 3.1]) { const zc = (bz0 + bz1) / 2;
-      const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.008, 40), alu); ring.position.set(xc, by0 - 0.004, zc); scene.add(ring);
-      const lens = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.038, 0.004, 32), M.lamp); lens.position.set(xc, by0 - 0.009, zc); scene.add(lens);
-      const l = new THREE.SpotLight(0xf1f5ff, 6, 0, 0.6, 0.7, 2); l.position.set(xc, by0 - 0.02, zc); l.target.position.set(xc, 0, zc);
-      scene.add(l, l.target); bulkSpots.push(l); }
     // warm LED strip in a shadow-gap along the bulkhead's living-room bottom edge, so the box reads as floating
     { const lip = new THREE.MeshStandardMaterial({ color: 0xe6e6e4, metalness: 0.6, roughness: 0.3 });               // flush aluminium profile, white-silver lips
       for (const z of [bz0 + 0.02, bz0 + 0.039]) B(bx0 + 0.02, by0 - 0.002, z, bx1 - 0.02, by0 + 0.002, z + 0.004, lip, { cast: false });
@@ -1669,7 +1708,7 @@ function mergeStatic(S) {
 /* ---------------- start ---------------- */
 (async () => {
   const S = await build();
-  $('cSpots').addEventListener('change', e => { const on = e.target.checked; S.spots.forEach(s => s.intensity = on ? 9 : 0); S.pendants.forEach(p => p.intensity = on ? 3 : 0); S.bulkSpots.forEach(p => p.intensity = on ? (p.isRectAreaLight ? 5 : 6) : 0); S.M.ledWarm.emissiveIntensity = on ? 4 : 0; S.M.lamp.emissiveIntensity = on ? 4.5 : 0; rebake(); });
+  $('cSpots').addEventListener('change', e => { const on = e.target.checked; S.spots.forEach(s => s.intensity = on ? 9 : 0); S.pendants.forEach(p => p.intensity = on ? 3 : 0); S.bulkSpots.forEach(p => p.intensity = on ? (p.isRectAreaLight ? 5 : 6) : 0); S.M.ledWarm.emissiveIntensity = on ? 4 : 0; WARM_LIGHTS.forEach(o => { o.l.intensity = on ? 6 : 0; o.m.emissiveIntensity = on ? 1.6 : 0; }); S.M.lamp.emissiveIntensity = on ? 4.5 : 0; rebake(); });
   $('cLed').addEventListener('change', e => { const on = e.target.checked; S.led.intensity = on ? 14 : 0; S.M.led.emissiveIntensity = on ? 5 : 0; rebake(); });
   $('cSun').addEventListener('change', e => { S.sun.intensity = e.target.checked ? 4.5 : 0; rebake(); });
   $('cAO').addEventListener('change', e => { aoOn = e.target.checked; if (aoOn && !composer) makeComposer(); dirty = true; });
