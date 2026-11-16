@@ -1314,8 +1314,9 @@ async function build() {
       const l = new THREE.SpotLight(0xf1f5ff, 6, 0, 0.6, 0.7, 2); l.position.set(xc, by0 - 0.02, zc); l.target.position.set(xc, 0, zc);
       scene.add(l, l.target); bulkSpots.push(l); }
     // warm LED strip in a shadow-gap along the bulkhead's living-room bottom edge, so the box reads as floating
-    B(bx0 + 0.02, by0 - 0.001, bz0 + 0.02, bx1 - 0.02, by0 + 0.012, bz0 + 0.045, M.dark, { cast: false });           // recessed aluminium channel
-    B(bx0 + 0.025, by0 + 0.004, bz0 + 0.026, bx1 - 0.025, by0 + 0.012, bz0 + 0.039, M.ledWarm, { cast: false });      // diffuser
+    { const lip = new THREE.MeshStandardMaterial({ color: 0xe6e6e4, metalness: 0.6, roughness: 0.3 });               // flush aluminium profile, white-silver lips
+      for (const z of [bz0 + 0.02, bz0 + 0.039]) B(bx0 + 0.02, by0 - 0.002, z, bx1 - 0.02, by0 + 0.002, z + 0.004, lip, { cast: false });
+      B(bx0 + 0.02, by0 - 0.0025, bz0 + 0.024, bx1 - 0.02, by0 + 0.002, bz0 + 0.039, M.ledWarm, { cast: false }); }    // glowing opal diffuser
     const strip = new THREE.RectAreaLight(0xffd6a0, 5, bx1 - bx0 - 0.05, 0.015);
     strip.position.set((bx0 + bx1) / 2, by0 - 0.002, bz0 + 0.032); strip.lookAt((bx0 + bx1) / 2, 0, bz0 - 0.5); scene.add(strip); bulkSpots.push(strip);
   }
